@@ -16,15 +16,10 @@ export default function ContributionForm({
   existing?: Contribution;
 }) {
   const { data, contributeToGoal, updateContribution, deleteContribution } = useAppData();
-  const topCategories = data.categories.filter((c) => c.parentId === null);
   const bank = data.banks.find((b) => b.id === goal.bankId);
-  const existingTransaction = existing?.transactionId
-    ? data.transactions.find((t) => t.id === existing.transactionId)
-    : undefined;
 
   const [monto, setMonto] = useState(existing ? String(existing.monto) : '');
   const [fecha, setFecha] = useState(existing?.fecha ?? todayISO());
-  const [categoryId, setCategoryId] = useState(existingTransaction?.categoryId ?? topCategories[0]?.id ?? '');
   const [nota, setNota] = useState(existing?.nota ?? '');
   const [error, setError] = useState('');
 
@@ -39,11 +34,7 @@ export default function ContributionForm({
       setError('La cuenta asociada a esta meta ya no existe. Editá la meta y elegí otra cuenta.');
       return;
     }
-    if (!categoryId) {
-      setError('Seleccioná una categoría para registrar el gasto.');
-      return;
-    }
-    const input = { monto: montoNum, fecha, nota: nota.trim(), categoryId };
+    const input = { monto: montoNum, fecha, nota: nota.trim() };
     if (existing) updateContribution(goal, existing, input);
     else contributeToGoal(goal, input);
     onClose();
@@ -80,16 +71,6 @@ export default function ContributionForm({
               onChange={(e) => setFecha(e.target.value)}
             />
           </div>
-        </div>
-        <div className={formStyles.field}>
-          <label className={formStyles.label}>Categoría</label>
-          <select className={formStyles.select} value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-            {topCategories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre}
-              </option>
-            ))}
-          </select>
         </div>
         <div className={formStyles.field}>
           <label className={formStyles.label}>Nota (opcional)</label>

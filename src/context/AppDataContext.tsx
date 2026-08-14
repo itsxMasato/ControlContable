@@ -35,11 +35,11 @@ interface AppDataContextValue {
   addGoal: (g: SavingsGoal) => void;
   updateGoal: (g: SavingsGoal) => void;
   deleteGoal: (id: string) => void;
-  contributeToGoal: (goal: SavingsGoal, input: { monto: number; fecha: string; nota: string; categoryId: string }) => void;
+  contributeToGoal: (goal: SavingsGoal, input: { monto: number; fecha: string; nota: string }) => void;
   updateContribution: (
     goal: SavingsGoal,
     contribution: Contribution,
-    input: { monto: number; fecha: string; nota: string; categoryId: string }
+    input: { monto: number; fecha: string; nota: string }
   ) => void;
   deleteContribution: (goal: SavingsGoal, contributionId: string) => void;
   addRecurring: (r: RecurringPayment) => void;
@@ -79,6 +79,25 @@ function LoadingScreen() {
 interface MetaDoc {
   settings: AppSettings;
   dismissedAlertIds: string[];
+}
+
+const SAVINGS_CATEGORY_NAME = 'Ahorro';
+
+/** Categoría fija usada para los aportes a metas — el usuario nunca la elige, así el aporte
+ * queda registrado como movimiento sin forzarlo a clasificarlo entre categorías de gasto. */
+function resolveSavingsCategory(categories: Category[]): Category {
+  const existing = categories.find(
+    (c) => c.parentId === null && c.nombre.trim().toLowerCase() === SAVINGS_CATEGORY_NAME.toLowerCase()
+  );
+  if (existing) return existing;
+  return {
+    id: crypto.randomUUID(),
+    nombre: SAVINGS_CATEGORY_NAME,
+    icono: 'piggy-bank',
+    colorIndex: 0,
+    parentId: null,
+    presupuestoMensual: null,
+  };
 }
 
 function AppDataProviderInner({ uid, children }: { uid: string; children: ReactNode }) {
@@ -196,11 +215,15 @@ function AppDataProviderInner({ uid, children }: { uid: string; children: ReactN
       updateGoal: (g) => void setDoc(userDoc(uid, 'savingsGoals', g.id), g),
       deleteGoal: (id) => void deleteDoc(userDoc(uid, 'savingsGoals', id)),
       contributeToGoal: (goal, input) => {
+        const category = resolveSavingsCategory(data.categories);
+        if (!data.categories.some((c) => c.id === category.id)) {
+          void setDoc(userDoc(uid, 'categories', category.id), category);
+        }
         const transaction: Transaction = {
           id: crypto.randomUUID(),
           fecha: input.fecha,
           bankId: goal.bankId,
-          categoryId: input.categoryId,
+          categoryId: category.id,
           monto: input.monto,
           tipo: 'gasto',
           nota: `Aporte a meta: ${goal.nombre}${input.nota ? ` — ${input.nota}` : ''}`,
@@ -217,11 +240,15 @@ function AppDataProviderInner({ uid, children }: { uid: string; children: ReactN
       },
       updateContribution: (goal, contribution, input) => {
         if (contribution.transactionId) {
+          const category = resolveSavingsCategory(data.categories);
+          if (!data.categories.some((c) => c.id === category.id)) {
+            void setDoc(userDoc(uid, 'categories', category.id), category);
+          }
           const transaction: Transaction = {
             id: contribution.transactionId,
             fecha: input.fecha,
             bankId: goal.bankId,
-            categoryId: input.categoryId,
+            categoryId: category.id,
             monto: input.monto,
             tipo: 'gasto',
             nota: `Aporte a meta: ${goal.nombre}${input.nota ? ` — ${input.nota}` : ''}`,
