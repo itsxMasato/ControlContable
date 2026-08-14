@@ -33,6 +33,8 @@ export default function AllocationForm({
       nombre: nombre.trim(),
       monto: montoNum,
       nota: nota.trim(),
+      recurringPaymentId: null,
+      cicloClave: null,
     };
     if (existing) updateAllocation(allocation);
     else addAllocation(allocation);
@@ -42,6 +44,11 @@ export default function AllocationForm({
   return (
     <Modal title={existing ? 'Editar apartado' : `Nuevo apartado en ${bank.nombre}`} onClose={onClose}>
       <form onSubmit={handleSubmit}>
+        {existing?.recurringPaymentId && (
+          <p style={{ fontSize: 12.5, marginBottom: 12, color: 'var(--ink-soft)' }}>
+            Este apartado lo generó el sistema automáticamente para un pago recurrente. Si lo editás, pasa a ser manual.
+          </p>
+        )}
         <div className={formStyles.field}>
           <label className={formStyles.label}>Nombre</label>
           <input

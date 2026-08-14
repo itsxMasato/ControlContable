@@ -5,6 +5,7 @@ import { useAppData } from '../../context/AppDataContext';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import Button from '../../components/ui/Button';
+import Badge from '../../components/ui/Badge';
 import RecurringPaymentForm from '../../components/forms/RecurringPaymentForm';
 import { CURRENCY_OPTIONS, formatMoney } from '../../utils/currency';
 import { ACCENT_OPTIONS } from '../../utils/themePresets';
@@ -181,7 +182,9 @@ export default function Settings() {
           </Button>
         </div>
         <p className={styles.rowSub} style={{ marginBottom: 12 }}>
-          Alimentan la alerta de "pago próximo" cuando faltan 7 días o menos para su vencimiento.
+          Alimentan la alerta de "pago próximo" cuando faltan 7 días o menos para su vencimiento. El sistema también
+          detecta automáticamente gastos que se repiten cada mes (los marcados como "Detectado") y, cada vez que
+          registrás un ingreso, aparta y reparte el dinero entre los pagos pendientes sin que tengas que hacerlo vos.
         </p>
         {data.recurringPayments.length === 0 ? (
           <p className="text-faint" style={{ fontSize: 13 }}>
@@ -191,7 +194,10 @@ export default function Settings() {
           data.recurringPayments.map((rp) => (
             <div key={rp.id} className={styles.recurringItem} onClick={() => setEditingRecurring(rp)}>
               <div>
-                <div className={styles.rowLabel}>{rp.nombre}</div>
+                <div className={styles.rowLabel} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {rp.nombre}
+                  {rp.autoDetectado && <Badge tone="gold">Detectado</Badge>}
+                </div>
                 <div className={styles.rowSub}>Vence el día {rp.diaDeVencimiento} de cada mes</div>
               </div>
               <span className="mono" style={{ fontWeight: 600 }}>

@@ -16,12 +16,13 @@ const ICONS = [
 ];
 
 export default function GoalForm({ onClose, existing }: { onClose: () => void; existing?: SavingsGoal }) {
-  const { addGoal, updateGoal, deleteGoal } = useAppData();
+  const { data, addGoal, updateGoal, deleteGoal } = useAppData();
   const { accent, dark } = useTheme();
   const COLORS = getChartPalette(accent, dark);
   const [nombre, setNombre] = useState(existing?.nombre ?? '');
   const [montoObjetivo, setMontoObjetivo] = useState(existing ? String(existing.montoObjetivo) : '');
   const [fechaObjetivo, setFechaObjetivo] = useState(existing?.fechaObjetivo ?? '');
+  const [bankId, setBankId] = useState(existing?.bankId ?? data.banks[0]?.id ?? '');
   const [colorIndex, setColorIndex] = useState(existing?.colorIndex ?? 0);
   const [icono, setIcono] = useState(existing?.icono ?? ICONS[0].value);
   const [error, setError] = useState('');
@@ -33,11 +34,16 @@ export default function GoalForm({ onClose, existing }: { onClose: () => void; e
       setError('Completá el nombre y un monto objetivo válido.');
       return;
     }
+    if (!bankId) {
+      setError('Seleccioná la cuenta de la que se descontarán los aportes.');
+      return;
+    }
     const goal: SavingsGoal = {
       id: existing?.id ?? crypto.randomUUID(),
       nombre: nombre.trim(),
       montoObjetivo: monto,
       fechaObjetivo: fechaObjetivo || null,
+      bankId,
       colorIndex,
       icono,
       contributions: existing?.contributions ?? [],
@@ -61,6 +67,21 @@ export default function GoalForm({ onClose, existing }: { onClose: () => void; e
             autoFocus
           />
         </div>
+
+        {data.banks.length === 0 ? (
+          <p className={formStyles.error}>Primero creá un banco o cuenta para poder asociarlo a esta meta.</p>
+        ) : (
+          <div className={formStyles.field}>
+            <label className={formStyles.label}>Cuenta de la que se descuentan los aportes</label>
+            <select className={formStyles.select} value={bankId} onChange={(e) => setBankId(e.target.value)}>
+              {data.banks.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className={formStyles.row}>
           <div className={formStyles.field}>

@@ -5,6 +5,7 @@ import { useAppData } from '../../context/AppDataContext';
 import { useTheme } from '../../context/ThemeContext';
 import { getIcon } from '../../components/ui/iconMap';
 import Sparkline from '../../components/charts/Sparkline';
+import Badge from '../../components/ui/Badge';
 import BankForm from '../../components/forms/BankForm';
 import AllocationForm from '../../components/forms/AllocationForm';
 import { bankAllocatedTotal, bankAvailable, bankBalance, monthExpenseTotal } from '../../utils/calculations';
@@ -123,7 +124,10 @@ export default function Banks() {
                           onClick={() => setAllocationTarget({ bank, existing: a })}
                         >
                           <div>
-                            <div className={styles.allocationName}>{a.nombre}</div>
+                            <div className={styles.allocationName} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              {a.nombre}
+                              {a.recurringPaymentId && <Badge tone="slate">Automático</Badge>}
+                            </div>
                             {a.nota && <div className="text-faint" style={{ fontSize: 11.5 }}>{a.nota}</div>}
                           </div>
                           <span className="mono" style={{ fontWeight: 600, color: 'var(--gold)' }}>

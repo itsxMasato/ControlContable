@@ -37,6 +37,8 @@ export interface Contribution {
   fecha: string;
   monto: number;
   nota: string;
+  /** Transacción de gasto generada automáticamente al aportar, si la meta tiene cuenta asociada. */
+  transactionId: string | null;
 }
 
 export interface SavingsGoal {
@@ -48,6 +50,8 @@ export interface SavingsGoal {
   montoObjetivo: number;
   fechaObjetivo: string | null;
   contributions: Contribution[];
+  /** Cuenta de la que se descuenta cada aporte. */
+  bankId: string;
 }
 
 export interface RecurringPayment {
@@ -57,6 +61,8 @@ export interface RecurringPayment {
   bankId: string;
   categoryId: string;
   diaDeVencimiento: number; // 1-28
+  /** true si lo creó el sistema al detectar un patrón repetido, no el usuario. */
+  autoDetectado?: boolean;
 }
 
 export interface Allocation {
@@ -65,6 +71,10 @@ export interface Allocation {
   nombre: string;
   monto: number;
   nota: string;
+  /** Si no es null, este apartado lo genera y gestiona automáticamente el pago recurrente indicado. */
+  recurringPaymentId?: string | null;
+  /** Ciclo (mes, "YYYY-MM") de vencimiento que cubre este apartado automático. */
+  cicloClave?: string | null;
 }
 
 export type AlertSeverity = 'info' | 'advertencia' | 'logro';

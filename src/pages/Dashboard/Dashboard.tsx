@@ -76,23 +76,29 @@ export default function Dashboard() {
       </div>
 
       <div className={`grid ${styles.contentGrid}`}>
-        <div className="card">
+        <div className={`card ${styles.chartCard}`}>
           <div className="section-title">Tendencia de gasto (6 meses)</div>
-          <MonthlyTrendLineChart data={trendData} currency={currency} />
+          <div className={styles.chartBody}>
+            <MonthlyTrendLineChart data={trendData} currency={currency} />
+          </div>
         </div>
-        <div className="card">
+        <div className={`card ${styles.chartCard}`}>
           <div className="section-title">Gasto por categoría — este mes</div>
-          <CategoryDonutChart data={donutData} currency={currency} />
+          <div className={styles.chartBody}>
+            <CategoryDonutChart data={donutData} currency={currency} />
+          </div>
         </div>
       </div>
 
       <div className={`grid ${styles.lowerGrid}`}>
-        <div className="card">
+        <div className={`card ${styles.chartCard}`}>
           <div className="section-title">Gasto por banco — este mes</div>
-          <BankBarChart data={bankBarData} currency={currency} />
+          <div className={styles.chartBody}>
+            <BankBarChart data={bankBarData} currency={currency} />
+          </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <div className={styles.rightColumn}>
           <div className="card">
             <div className={styles.streakWrap}>
               <div className={styles.streakFlame}>
@@ -109,7 +115,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="card">
+          <div className={`card ${styles.movementsCard}`}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
               <span className="section-title" style={{ marginBottom: 0 }}>
                 Últimos movimientos

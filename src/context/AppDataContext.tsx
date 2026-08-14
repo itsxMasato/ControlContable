@@ -13,6 +13,13 @@ import type {
 } from '../types';
 import { ensureMetaDoc, metaDoc, normalizeSettings, replaceAllData, userCollection, userDoc, deleteWhere } from '../firebase/firestoreData';
 import { useAuth } from './AuthContext';
+import { monthKey } from '../utils/dates';
+import {
+  computePendingForCycle,
+  detectRecurringCandidates,
+  findMatchingRecurring,
+  splitIncomeAcrossPending,
+} from '../utils/recurringEngine';
 
 interface AppDataContextValue {
   data: AppData;
@@ -28,7 +35,13 @@ interface AppDataContextValue {
   addGoal: (g: SavingsGoal) => void;
   updateGoal: (g: SavingsGoal) => void;
   deleteGoal: (id: string) => void;
-  addContribution: (goalId: string, contribution: Contribution) => void;
+  contributeToGoal: (goal: SavingsGoal, input: { monto: number; fecha: string; nota: string; categoryId: string }) => void;
+  updateContribution: (
+    goal: SavingsGoal,
+    contribution: Contribution,
+    input: { monto: number; fecha: string; nota: string; categoryId: string }
+  ) => void;
+  deleteContribution: (goal: SavingsGoal, contributionId: string) => void;
   addRecurring: (r: RecurringPayment) => void;
   updateRecurring: (r: RecurringPayment) => void;
   deleteRecurring: (id: string) => void;
@@ -101,6 +114,19 @@ function AppDataProviderInner({ uid, children }: { uid: string; children: ReactN
     return () => unsubscribers.forEach((unsub) => unsub());
   }, [uid]);
 
+  const detectedSignatures = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const candidates = detectRecurringCandidates(transactions, recurringPayments, categories);
+    const fresh = candidates.filter((c) => {
+      const sig = `${c.bankId}|${c.categoryId}|${Math.round(c.monto)}`;
+      if (detectedSignatures.current.has(sig)) return false;
+      detectedSignatures.current.add(sig);
+      return true;
+    });
+    for (const c of fresh) void setDoc(userDoc(uid, 'recurringPayments', c.id), c);
+  }, [uid, transactions, recurringPayments, categories]);
+
   const data: AppData | null = useMemo(
     () =>
       meta
@@ -122,7 +148,35 @@ function AppDataProviderInner({ uid, children }: { uid: string; children: ReactN
     if (!data) return null;
     return {
       data,
-      addTransaction: (t) => void setDoc(userDoc(uid, 'transactions', t.id), t),
+      addTransaction: (t) => {
+        void setDoc(userDoc(uid, 'transactions', t.id), t);
+        if (t.tipo === 'ingreso') {
+          const cicloClave = monthKey(t.fecha);
+          const pending = computePendingForCycle(t.bankId, cicloClave, data.recurringPayments, data.allocations);
+          const splits = splitIncomeAcrossPending(t.monto, pending);
+          for (const s of splits) {
+            const rp = data.recurringPayments.find((r) => r.id === s.recurringPaymentId);
+            if (!rp) continue;
+            const allocation: Allocation = {
+              id: crypto.randomUUID(),
+              bankId: t.bankId,
+              nombre: rp.nombre,
+              monto: s.monto,
+              nota: 'Apartado automático',
+              recurringPaymentId: rp.id,
+              cicloClave,
+            };
+            void setDoc(userDoc(uid, 'allocations', allocation.id), allocation);
+          }
+        } else {
+          const rp = findMatchingRecurring(t, data.recurringPayments);
+          if (rp) {
+            const cicloClave = monthKey(t.fecha);
+            const match = data.allocations.find((a) => a.recurringPaymentId === rp.id && a.cicloClave === cicloClave);
+            if (match) void deleteDoc(userDoc(uid, 'allocations', match.id));
+          }
+        }
+      },
       updateTransaction: (t) => void setDoc(userDoc(uid, 'transactions', t.id), t),
       deleteTransaction: (id) => void deleteDoc(userDoc(uid, 'transactions', id)),
       addBank: (b) => void setDoc(userDoc(uid, 'banks', b.id), b),
@@ -141,8 +195,50 @@ function AppDataProviderInner({ uid, children }: { uid: string; children: ReactN
       addGoal: (g) => void setDoc(userDoc(uid, 'savingsGoals', g.id), g),
       updateGoal: (g) => void setDoc(userDoc(uid, 'savingsGoals', g.id), g),
       deleteGoal: (id) => void deleteDoc(userDoc(uid, 'savingsGoals', id)),
-      addContribution: (goalId, contribution) =>
-        void updateDoc(userDoc(uid, 'savingsGoals', goalId), { contributions: arrayUnion(contribution) }),
+      contributeToGoal: (goal, input) => {
+        const transaction: Transaction = {
+          id: crypto.randomUUID(),
+          fecha: input.fecha,
+          bankId: goal.bankId,
+          categoryId: input.categoryId,
+          monto: input.monto,
+          tipo: 'gasto',
+          nota: `Aporte a meta: ${goal.nombre}${input.nota ? ` — ${input.nota}` : ''}`,
+        };
+        void setDoc(userDoc(uid, 'transactions', transaction.id), transaction);
+        const contribution = {
+          id: crypto.randomUUID(),
+          fecha: input.fecha,
+          monto: input.monto,
+          nota: input.nota,
+          transactionId: transaction.id,
+        };
+        void updateDoc(userDoc(uid, 'savingsGoals', goal.id), { contributions: arrayUnion(contribution) });
+      },
+      updateContribution: (goal, contribution, input) => {
+        if (contribution.transactionId) {
+          const transaction: Transaction = {
+            id: contribution.transactionId,
+            fecha: input.fecha,
+            bankId: goal.bankId,
+            categoryId: input.categoryId,
+            monto: input.monto,
+            tipo: 'gasto',
+            nota: `Aporte a meta: ${goal.nombre}${input.nota ? ` — ${input.nota}` : ''}`,
+          };
+          void setDoc(userDoc(uid, 'transactions', transaction.id), transaction);
+        }
+        const updatedContributions = goal.contributions.map((c) =>
+          c.id === contribution.id ? { ...c, monto: input.monto, fecha: input.fecha, nota: input.nota } : c
+        );
+        void updateDoc(userDoc(uid, 'savingsGoals', goal.id), { contributions: updatedContributions });
+      },
+      deleteContribution: (goal, contributionId) => {
+        const target = goal.contributions.find((c) => c.id === contributionId);
+        if (target?.transactionId) void deleteDoc(userDoc(uid, 'transactions', target.transactionId));
+        const updatedContributions = goal.contributions.filter((c) => c.id !== contributionId);
+        void updateDoc(userDoc(uid, 'savingsGoals', goal.id), { contributions: updatedContributions });
+      },
       addRecurring: (r) => void setDoc(userDoc(uid, 'recurringPayments', r.id), r),
       updateRecurring: (r) => void setDoc(userDoc(uid, 'recurringPayments', r.id), r),
       deleteRecurring: (id) => void deleteDoc(userDoc(uid, 'recurringPayments', id)),

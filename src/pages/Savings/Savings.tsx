@@ -13,14 +13,16 @@ import { goalCurrentAmount, projectedGoalDate } from '../../utils/calculations';
 import { formatMoney } from '../../utils/currency';
 import { resolveThemeColor } from '../../utils/chartPalette';
 import { formatDateShort } from '../../utils/dates';
-import type { SavingsGoal } from '../../types';
+import type { Contribution, SavingsGoal } from '../../types';
 
 export default function Savings() {
   const { data } = useAppData();
   const { savingsGoals, settings } = data;
   const { accent, dark } = useTheme();
   const [editingGoal, setEditingGoal] = useState<SavingsGoal | 'new' | null>(null);
-  const [contributingTo, setContributingTo] = useState<SavingsGoal | null>(null);
+  const [contributionTarget, setContributionTarget] = useState<{ goal: SavingsGoal; existing?: Contribution } | null>(
+    null
+  );
 
   const allContributions = savingsGoals
     .flatMap((g) => g.contributions.map((c) => ({ ...c, goal: g })))
@@ -46,12 +48,16 @@ export default function Savings() {
           const current = goalCurrentAmount(goal);
           const projected = projectedGoalDate(goal);
           const reached = current >= goal.montoObjetivo;
+          const bank = data.banks.find((b) => b.id === goal.bankId);
           return (
             <div key={goal.id} className={`card ${styles.goalCard}`}>
               <div className={styles.goalHeader}>
                 <span onClick={() => setEditingGoal(goal)} style={{ cursor: 'pointer' }} className={styles.goalName}>
                   {goal.nombre}
                 </span>
+              </div>
+              <div className="text-faint" style={{ fontSize: 11.5, marginTop: -6, marginBottom: 4 }}>
+                {bank ? `Se descuenta de ${bank.nombre}` : 'Sin cuenta asociada'}
               </div>
               <CircularProgress value={current} max={goal.montoObjetivo} color={reached ? 'var(--gold)' : goalColor}>
                 <Icon size={18} strokeWidth={1.8} color={goalColor} style={{ marginBottom: 2 }} />
@@ -66,7 +72,7 @@ export default function Savings() {
               <div className={styles.metaLine}>
                 {reached ? '¡Meta alcanzada!' : projected ? `Estimado: ${formatDateShort(projected)}` : 'Sin proyección aún'}
               </div>
-              <Button variant="secondary" size="small" full onClick={() => setContributingTo(goal)}>
+              <Button variant="secondary" size="small" full onClick={() => setContributionTarget({ goal })}>
                 Agregar aporte
               </Button>
             </div>
@@ -85,7 +91,12 @@ export default function Savings() {
         ) : (
           <div className={styles.timeline}>
             {allContributions.map((c) => (
-              <div key={c.id} className={styles.timelineItem}>
+              <div
+                key={c.id}
+                className={styles.timelineItem}
+                onClick={() => setContributionTarget({ goal: c.goal, existing: c })}
+                style={{ cursor: 'pointer' }}
+              >
                 <span
                   className={styles.timelineDot}
                   style={{ background: resolveThemeColor(c.goal.colorIndex, c.goal.id, accent, dark) }}
@@ -110,7 +121,13 @@ export default function Savings() {
       {editingGoal && (
         <GoalForm onClose={() => setEditingGoal(null)} existing={editingGoal === 'new' ? undefined : editingGoal} />
       )}
-      {contributingTo && <ContributionForm onClose={() => setContributingTo(null)} goal={contributingTo} />}
+      {contributionTarget && (
+        <ContributionForm
+          onClose={() => setContributionTarget(null)}
+          goal={contributionTarget.goal}
+          existing={contributionTarget.existing}
+        />
+      )}
     </div>
   );
 }

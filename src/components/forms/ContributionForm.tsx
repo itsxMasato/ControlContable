@@ -3,14 +3,29 @@ import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import formStyles from '../ui/Form.module.css';
 import { useAppData } from '../../context/AppDataContext';
-import type { SavingsGoal } from '../../types';
+import type { Contribution, SavingsGoal } from '../../types';
 import { todayISO } from '../../utils/dates';
 
-export default function ContributionForm({ onClose, goal }: { onClose: () => void; goal: SavingsGoal }) {
-  const { addContribution } = useAppData();
-  const [monto, setMonto] = useState('');
-  const [fecha, setFecha] = useState(todayISO());
-  const [nota, setNota] = useState('');
+export default function ContributionForm({
+  onClose,
+  goal,
+  existing,
+}: {
+  onClose: () => void;
+  goal: SavingsGoal;
+  existing?: Contribution;
+}) {
+  const { data, contributeToGoal, updateContribution, deleteContribution } = useAppData();
+  const topCategories = data.categories.filter((c) => c.parentId === null);
+  const bank = data.banks.find((b) => b.id === goal.bankId);
+  const existingTransaction = existing?.transactionId
+    ? data.transactions.find((t) => t.id === existing.transactionId)
+    : undefined;
+
+  const [monto, setMonto] = useState(existing ? String(existing.monto) : '');
+  const [fecha, setFecha] = useState(existing?.fecha ?? todayISO());
+  const [categoryId, setCategoryId] = useState(existingTransaction?.categoryId ?? topCategories[0]?.id ?? '');
+  const [nota, setNota] = useState(existing?.nota ?? '');
   const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -20,13 +35,28 @@ export default function ContributionForm({ onClose, goal }: { onClose: () => voi
       setError('Ingresá un monto válido mayor a cero.');
       return;
     }
-    addContribution(goal.id, { id: crypto.randomUUID(), fecha, monto: montoNum, nota: nota.trim() });
+    if (!bank) {
+      setError('La cuenta asociada a esta meta ya no existe. Editá la meta y elegí otra cuenta.');
+      return;
+    }
+    if (!categoryId) {
+      setError('Seleccioná una categoría para registrar el gasto.');
+      return;
+    }
+    const input = { monto: montoNum, fecha, nota: nota.trim(), categoryId };
+    if (existing) updateContribution(goal, existing, input);
+    else contributeToGoal(goal, input);
     onClose();
   };
 
   return (
-    <Modal title={`Aportar a "${goal.nombre}"`} onClose={onClose}>
+    <Modal title={existing ? `Editar aporte de "${goal.nombre}"` : `Aportar a "${goal.nombre}"`} onClose={onClose}>
       <form onSubmit={handleSubmit}>
+        <p style={{ fontSize: 12.5, marginBottom: 12, color: 'var(--ink-soft)' }}>
+          {bank
+            ? `Se descontará de ${bank.nombre} y quedará registrado como movimiento.`
+            : 'La cuenta asociada a esta meta ya no existe.'}
+        </p>
         <div className={formStyles.row}>
           <div className={formStyles.field}>
             <label className={formStyles.label}>Monto</label>
@@ -52,6 +82,16 @@ export default function ContributionForm({ onClose, goal }: { onClose: () => voi
           </div>
         </div>
         <div className={formStyles.field}>
+          <label className={formStyles.label}>Categoría</label>
+          <select className={formStyles.select} value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+            {topCategories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className={formStyles.field}>
           <label className={formStyles.label}>Nota (opcional)</label>
           <input
             className={formStyles.input}
@@ -63,11 +103,23 @@ export default function ContributionForm({ onClose, goal }: { onClose: () => voi
         </div>
         {error && <div className={formStyles.error}>{error}</div>}
         <div className={formStyles.actions}>
+          {existing && (
+            <Button
+              type="button"
+              variant="danger"
+              onClick={() => {
+                deleteContribution(goal, existing.id);
+                onClose();
+              }}
+            >
+              Eliminar
+            </Button>
+          )}
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancelar
           </Button>
           <Button type="submit" variant="primary">
-            Agregar aporte
+            {existing ? 'Guardar cambios' : 'Agregar aporte'}
           </Button>
         </div>
       </form>

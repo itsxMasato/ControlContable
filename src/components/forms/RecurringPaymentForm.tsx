@@ -37,6 +37,7 @@ export default function RecurringPaymentForm({
       bankId,
       categoryId,
       diaDeVencimiento: dia,
+      autoDetectado: false,
     };
     if (existing) updateRecurring(rp);
     else addRecurring(rp);
