@@ -1,0 +1,93 @@
+.metricsGrid {
+  grid-template-columns: repeat(4, 1fr);
+  margin-bottom: var(--space-4);
+}
+
+.contentGrid {
+  grid-template-columns: 1.3fr 1fr;
+  align-items: start;
+  margin-bottom: var(--space-4);
+}
+
+.lowerGrid {
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+}
+
+.movementRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+}
+
+.movementRow:last-child {
+  border-bottom: none;
+}
+
+.movementDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.movementMeta {
+  flex: 1;
+  min-width: 0;
+}
+
+.movementNote {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.streakWrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.streakFlame {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--gold-soft);
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.alertRow {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.alertRow:last-child {
+  border-bottom: none;
+}
+
+@media (max-width: 1100px) {
+  .metricsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .contentGrid,
+  .lowerGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .metricsGrid {
+    grid-template-columns: 1fr;
+  }
+}

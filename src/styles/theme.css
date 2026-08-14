@@ -1,0 +1,93 @@
+:root {
+  /* Paleta — modo claro (papel) */
+  --paper: #eae6d6;
+  --card: #f8f6ec;
+  --card-raised: #fffdf5;
+  --ink: #1f2e3d;
+  --ink-soft: #51606d;
+  --ink-faint: #7c8994;
+
+  --gold: #a9782e;
+  --gold-soft: rgba(169, 120, 46, 0.14);
+  --brick: #a63a2f;
+  --brick-soft: rgba(166, 58, 47, 0.13);
+  --forest: #3f6b4a;
+  --forest-soft: rgba(63, 107, 74, 0.13);
+  --slate: #3b5872;
+  --slate-soft: rgba(59, 88, 114, 0.13);
+
+  --border: rgba(31, 46, 61, 0.14);
+  --border-strong: rgba(31, 46, 61, 0.26);
+
+  --shadow-none: none;
+
+  --font-serif: 'Fraunces', Georgia, serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --sidebar-w: 240px;
+  --sidebar-w-collapsed: 72px;
+  --topbar-h: 68px;
+  --mobile-nav-h: 64px;
+
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --paper: #14181d;
+  --card: #1c222a;
+  --card-raised: #222933;
+  --ink: #e9e4d3;
+  --ink-soft: #aab0b8;
+  --ink-faint: #7d8791;
+
+  --gold: #d1a04f;
+  --gold-soft: rgba(209, 160, 79, 0.16);
+  --brick: #d97c6e;
+  --brick-soft: rgba(217, 124, 110, 0.16);
+  --forest: #6fa77d;
+  --forest-soft: rgba(111, 167, 125, 0.16);
+  --slate: #7fa0bd;
+  --slate-soft: rgba(127, 160, 189, 0.16);
+
+  --border: rgba(233, 228, 211, 0.12);
+  --border-strong: rgba(233, 228, 211, 0.24);
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --paper: #14181d;
+    --card: #1c222a;
+    --card-raised: #222933;
+    --ink: #e9e4d3;
+    --ink-soft: #aab0b8;
+    --ink-faint: #7d8791;
+
+    --gold: #d1a04f;
+    --gold-soft: rgba(209, 160, 79, 0.16);
+    --brick: #d97c6e;
+    --brick-soft: rgba(217, 124, 110, 0.16);
+    --forest: #6fa77d;
+    --forest-soft: rgba(111, 167, 125, 0.16);
+    --slate: #7fa0bd;
+    --slate-soft: rgba(127, 160, 189, 0.16);
+
+    --border: rgba(233, 228, 211, 0.12);
+    --border-strong: rgba(233, 228, 211, 0.24);
+    color-scheme: dark;
+  }
+}

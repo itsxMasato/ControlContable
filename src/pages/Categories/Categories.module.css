@@ -1,0 +1,94 @@
+.list {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.row:hover {
+  background: var(--gold-soft);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.subRow {
+  padding-left: 52px;
+  background: color-mix(in srgb, var(--paper) 40%, transparent);
+}
+
+.chevronBtn {
+  background: transparent;
+  border: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+  display: flex;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.iconWrap {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.name {
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+  width: 170px;
+}
+
+.progressWrap {
+  flex: 1;
+  min-width: 100px;
+}
+
+.amounts {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  white-space: nowrap;
+  min-width: 140px;
+  text-align: right;
+}
+
+.addSubBtn {
+  background: transparent;
+  border: none;
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.addSubBtn:hover {
+  background: var(--gold-soft);
+}
+
+@media (max-width: 720px) {
+  .name {
+    width: 110px;
+  }
+  .progressWrap {
+    display: none;
+  }
+}

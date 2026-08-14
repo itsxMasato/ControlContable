@@ -1,0 +1,75 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease, color 150ms ease;
+  white-space: nowrap;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.primary {
+  background: var(--gold);
+  color: var(--card);
+  border-color: var(--gold);
+}
+
+.primary:hover {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+:root[data-theme='dark'] .primary:hover {
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+
+.secondary {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--border-strong);
+}
+
+.secondary:hover {
+  border-color: var(--ink);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--ink-soft);
+  border-color: transparent;
+  padding: 8px 10px;
+}
+
+.ghost:hover {
+  color: var(--ink);
+  background: var(--gold-soft);
+}
+
+.danger {
+  background: transparent;
+  color: var(--brick);
+  border-color: var(--brick-soft);
+}
+
+.danger:hover {
+  background: var(--brick-soft);
+}
+
+.small {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.full {
+  width: 100%;
+}
