@@ -4,7 +4,8 @@ import Button from '../ui/Button';
 import formStyles from '../ui/Form.module.css';
 import { useAppData } from '../../context/AppDataContext';
 import type { Transaction, TransactionType } from '../../types';
-import { todayISO } from '../../utils/dates';
+import { addMonthsToDate, todayISO } from '../../utils/dates';
+import { formatMoney } from '../../utils/currency';
 
 export default function TransactionForm({
   onClose,
@@ -33,9 +34,15 @@ export default function TransactionForm({
     existing && data.categories.find((c) => c.id === existing.categoryId)?.parentId ? existing.categoryId : ''
   );
   const [nota, setNota] = useState(existing?.nota ?? '');
+  const [enCuotas, setEnCuotas] = useState(false);
+  const [numCuotas, setNumCuotas] = useState('3');
   const [error, setError] = useState('');
 
   const subcategories = data.categories.filter((c) => c.parentId === topCategoryId);
+
+  const montoNumPreview = parseFloat(monto) || 0;
+  const numCuotasPreview = Math.max(2, parseInt(numCuotas, 10) || 0);
+  const montoPorCuotaPreview = montoNumPreview > 0 ? montoNumPreview / numCuotasPreview : 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +61,31 @@ export default function TransactionForm({
       return;
     }
 
+    if (!existing && enCuotas) {
+      const n = Math.max(2, parseInt(numCuotas, 10) || 0);
+      const grupoId = crypto.randomUUID();
+      const base = Math.floor((montoNum / n) * 100) / 100;
+      const ultima = Math.round((montoNum - base * (n - 1)) * 100) / 100;
+      for (let i = 0; i < n; i++) {
+        const cuotaMonto = i === n - 1 ? ultima : base;
+        const tx: Transaction = {
+          id: crypto.randomUUID(),
+          fecha: addMonthsToDate(fecha, i),
+          bankId,
+          categoryId,
+          monto: cuotaMonto,
+          tipo,
+          nota,
+          cuotaGrupoId: grupoId,
+          cuotaNumero: i + 1,
+          cuotaTotalCuotas: n,
+        };
+        addTransaction(tx);
+      }
+      onClose();
+      return;
+    }
+
     const tx: Transaction = {
       id: existing?.id ?? crypto.randomUUID(),
       fecha,
@@ -62,6 +94,9 @@ export default function TransactionForm({
       monto: montoNum,
       tipo,
       nota,
+      cuotaGrupoId: existing?.cuotaGrupoId ?? null,
+      cuotaNumero: existing?.cuotaNumero ?? null,
+      cuotaTotalCuotas: existing?.cuotaTotalCuotas ?? null,
     };
     if (existing) updateTransaction(tx);
     else addTransaction(tx);
@@ -170,6 +205,47 @@ export default function TransactionForm({
             onChange={(e) => setNota(e.target.value)}
           />
         </div>
+
+        {existing?.cuotaGrupoId ? (
+          <p className="text-faint" style={{ fontSize: 12.5, marginBottom: 12 }}>
+            Cuota {existing.cuotaNumero} de {existing.cuotaTotalCuotas}. Las demás cuotas de esta compra no se modifican
+            al editar esta.
+          </p>
+        ) : (
+          !existing && (
+            <div className={formStyles.field}>
+              <label className={formStyles.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={enCuotas}
+                  onChange={(e) => setEnCuotas(e.target.checked)}
+                  style={{ width: 15, height: 15 }}
+                />
+                Pagar en cuotas
+              </label>
+              {enCuotas && (
+                <>
+                  <input
+                    className={formStyles.input}
+                    type="number"
+                    min="2"
+                    max="60"
+                    step="1"
+                    value={numCuotas}
+                    onChange={(e) => setNumCuotas(e.target.value)}
+                    style={{ marginTop: 8, maxWidth: 120 }}
+                  />
+                  {montoNumPreview > 0 && (
+                    <p className="text-faint" style={{ fontSize: 12.5, marginTop: 6 }}>
+                      Se crearán {numCuotasPreview} movimientos de {formatMoney(montoPorCuotaPreview, data.settings.moneda)}{' '}
+                      aprox., uno por mes a partir de la fecha elegida.
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          )
+        )}
 
         {error && <div className={formStyles.error}>{error}</div>}
 

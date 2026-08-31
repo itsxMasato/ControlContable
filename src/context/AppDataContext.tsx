@@ -20,6 +20,7 @@ import {
   findMatchingRecurring,
   splitIncomeAcrossPending,
 } from '../utils/recurringEngine';
+import { findMatchingAllocationByCategory } from '../utils/calculations';
 
 interface AppDataContextValue {
   data: AppData;
@@ -48,6 +49,11 @@ interface AppDataContextValue {
   addAllocation: (a: Allocation) => void;
   updateAllocation: (a: Allocation) => void;
   deleteAllocation: (id: string) => void;
+  addTransfer: (input: { fecha: string; origenBankId: string; destinoBankId: string; monto: number; nota: string }) => void;
+  updateTransfer: (
+    transferId: string,
+    input: { fecha: string; origenBankId: string; destinoBankId: string; monto: number; nota: string }
+  ) => void;
   dismissAlert: (id: string) => void;
   dismissAllAlerts: (ids: string[]) => void;
   updateSettings: (s: Partial<AppSettings>) => void;
@@ -82,6 +88,7 @@ interface MetaDoc {
 }
 
 const SAVINGS_CATEGORY_NAME = 'Ahorro';
+const TRANSFER_CATEGORY_NAME = 'Transferencia';
 
 /** Categoría fija usada para los aportes a metas — el usuario nunca la elige, así el aporte
  * queda registrado como movimiento sin forzarlo a clasificarlo entre categorías de gasto. */
@@ -94,6 +101,22 @@ function resolveSavingsCategory(categories: Category[]): Category {
     id: crypto.randomUUID(),
     nombre: SAVINGS_CATEGORY_NAME,
     icono: 'piggy-bank',
+    colorIndex: 0,
+    parentId: null,
+    presupuestoMensual: null,
+  };
+}
+
+/** Categoría fija usada en ambas patas de una transferencia entre cuentas propias. */
+function resolveTransferCategory(categories: Category[]): Category {
+  const existing = categories.find(
+    (c) => c.parentId === null && c.nombre.trim().toLowerCase() === TRANSFER_CATEGORY_NAME.toLowerCase()
+  );
+  if (existing) return existing;
+  return {
+    id: crypto.randomUUID(),
+    nombre: TRANSFER_CATEGORY_NAME,
+    icono: 'arrow-left-right',
     colorIndex: 0,
     parentId: null,
     presupuestoMensual: null,
@@ -193,11 +216,27 @@ function AppDataProviderInner({ uid, children }: { uid: string; children: ReactN
             const cicloClave = monthKey(t.fecha);
             const match = data.allocations.find((a) => a.recurringPaymentId === rp.id && a.cicloClave === cicloClave);
             if (match) void deleteDoc(userDoc(uid, 'allocations', match.id));
+          } else {
+            const matchedAllocation = findMatchingAllocationByCategory(t, data.categories, data.allocations);
+            if (matchedAllocation) {
+              const restante = Math.round((matchedAllocation.monto - t.monto) * 100) / 100;
+              if (restante <= 0.01) void deleteDoc(userDoc(uid, 'allocations', matchedAllocation.id));
+              else void updateDoc(userDoc(uid, 'allocations', matchedAllocation.id), { monto: restante });
+            }
           }
         }
       },
       updateTransaction: (t) => void setDoc(userDoc(uid, 'transactions', t.id), t),
-      deleteTransaction: (id) => void deleteDoc(userDoc(uid, 'transactions', id)),
+      deleteTransaction: (id) => {
+        const target = data.transactions.find((t) => t.id === id);
+        if (target?.transferId) {
+          for (const leg of data.transactions.filter((t) => t.transferId === target.transferId)) {
+            void deleteDoc(userDoc(uid, 'transactions', leg.id));
+          }
+        } else {
+          void deleteDoc(userDoc(uid, 'transactions', id));
+        }
+      },
       addBank: (b) => void setDoc(userDoc(uid, 'banks', b.id), b),
       updateBank: (b) => void setDoc(userDoc(uid, 'banks', b.id), b),
       deleteBank: (id) => {
@@ -272,6 +311,66 @@ function AppDataProviderInner({ uid, children }: { uid: string; children: ReactN
       addAllocation: (a) => void setDoc(userDoc(uid, 'allocations', a.id), a),
       updateAllocation: (a) => void setDoc(userDoc(uid, 'allocations', a.id), a),
       deleteAllocation: (id) => void deleteDoc(userDoc(uid, 'allocations', id)),
+      addTransfer: (input) => {
+        const category = resolveTransferCategory(data.categories);
+        if (!data.categories.some((c) => c.id === category.id)) {
+          void setDoc(userDoc(uid, 'categories', category.id), category);
+        }
+        const transferId = crypto.randomUUID();
+        const salida: Transaction = {
+          id: crypto.randomUUID(),
+          fecha: input.fecha,
+          bankId: input.origenBankId,
+          categoryId: category.id,
+          monto: input.monto,
+          tipo: 'gasto',
+          nota: input.nota,
+          transferId,
+        };
+        const entrada: Transaction = {
+          id: crypto.randomUUID(),
+          fecha: input.fecha,
+          bankId: input.destinoBankId,
+          categoryId: category.id,
+          monto: input.monto,
+          tipo: 'ingreso',
+          nota: input.nota,
+          transferId,
+        };
+        void setDoc(userDoc(uid, 'transactions', salida.id), salida);
+        void setDoc(userDoc(uid, 'transactions', entrada.id), entrada);
+      },
+      updateTransfer: (transferId, input) => {
+        const legs = data.transactions.filter((t) => t.transferId === transferId);
+        const salida = legs.find((t) => t.tipo === 'gasto');
+        const entrada = legs.find((t) => t.tipo === 'ingreso');
+        const category = resolveTransferCategory(data.categories);
+        if (!data.categories.some((c) => c.id === category.id)) {
+          void setDoc(userDoc(uid, 'categories', category.id), category);
+        }
+        if (salida) {
+          const updated: Transaction = {
+            ...salida,
+            fecha: input.fecha,
+            bankId: input.origenBankId,
+            categoryId: category.id,
+            monto: input.monto,
+            nota: input.nota,
+          };
+          void setDoc(userDoc(uid, 'transactions', updated.id), updated);
+        }
+        if (entrada) {
+          const updated: Transaction = {
+            ...entrada,
+            fecha: input.fecha,
+            bankId: input.destinoBankId,
+            categoryId: category.id,
+            monto: input.monto,
+            nota: input.nota,
+          };
+          void setDoc(userDoc(uid, 'transactions', updated.id), updated);
+        }
+      },
       dismissAlert: (id) => void updateDoc(metaDoc(uid), { dismissedAlertIds: arrayUnion(id) }),
       dismissAllAlerts: (ids) => {
         if (ids.length === 0) return;

@@ -12,6 +12,14 @@ export function addMonths(monthKeyStr: string, delta: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
+/** Suma meses a una fecha completa (YYYY-MM-DD) conservando el día, ajustado si el mes destino es más corto. */
+export function addMonthsToDate(dateISO: string, delta: number): string {
+  const [y, m, d] = dateISO.split('-').map(Number);
+  const target = new Date(y, m - 1 + delta, d);
+  if (target.getDate() !== d) target.setDate(0); // el mes destino no tiene ese día: usar el último día
+  return target.toISOString().slice(0, 10);
+}
+
 export function monthLabel(monthKeyStr: string): string {
   const [y, m] = monthKeyStr.split('-').map(Number);
   const d = new Date(y, m - 1, 1);

@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Search } from 'lucide-react';
+import { ArrowLeftRight, Plus, Search } from 'lucide-react';
 import styles from './Transactions.module.css';
 import { useAppData } from '../../context/AppDataContext';
 import { useTheme } from '../../context/ThemeContext';
 import Button from '../../components/ui/Button';
+import Badge from '../../components/ui/Badge';
 import EmptyState from '../../components/ui/EmptyState';
 import TransactionForm from '../../components/forms/TransactionForm';
+import TransferForm from '../../components/forms/TransferForm';
 import { formatDateShort } from '../../utils/dates';
 import { formatMoney } from '../../utils/currency';
 import { resolveThemeColor } from '../../utils/chartPalette';
@@ -24,6 +26,7 @@ export default function Transactions() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [editing, setEditing] = useState<Transaction | 'new' | null>(null);
+  const [transferEditing, setTransferEditing] = useState<Transaction | 'new' | null>(null);
 
   const topCategories = categories.filter((c) => c.parentId === null);
 
@@ -72,9 +75,16 @@ export default function Transactions() {
           <h1 className="page-title">Transacciones</h1>
           <p className="page-subtitle">{filtered.length} movimiento{filtered.length === 1 ? '' : 's'}</p>
         </div>
-        <Button variant="primary" icon={<Plus size={16} />} onClick={() => setEditing('new')}>
-          Nueva transacción
-        </Button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {banks.length >= 2 && (
+            <Button variant="secondary" icon={<ArrowLeftRight size={16} />} onClick={() => setTransferEditing('new')}>
+              Transferir
+            </Button>
+          )}
+          <Button variant="primary" icon={<Plus size={16} />} onClick={() => setEditing('new')}>
+            Nueva transacción
+          </Button>
+        </div>
       </div>
 
       <div className={styles.filters}>
@@ -147,10 +157,14 @@ export default function Transactions() {
                 {filtered.map((t) => {
                   const bank = banks.find((b) => b.id === t.bankId);
                   const bankColor = bank ? resolveThemeColor(bank.colorIndex, bank.id, accent, dark) : 'transparent';
+                  const partnerLeg = t.transferId
+                    ? transactions.find((o) => o.transferId === t.transferId && o.id !== t.id)
+                    : undefined;
+                  const partnerBank = partnerLeg ? banks.find((b) => b.id === partnerLeg.bankId) : undefined;
                   return (
                     <tr
                       key={t.id}
-                      onClick={() => setEditing(t)}
+                      onClick={() => (t.transferId ? setTransferEditing(t) : setEditing(t))}
                       style={{ boxShadow: `inset 3px 0 0 ${bankColor}` }}
                     >
                       <td className="mono text-soft">{formatDateShort(t.fecha)}</td>
@@ -161,7 +175,15 @@ export default function Transactions() {
                         </span>
                       </td>
                       <td className="text-soft">{categoryLabel(t.categoryId)}</td>
-                      <td>{t.nota || '—'}</td>
+                      <td>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          {t.transferId && partnerBank && (
+                            <Badge tone="gold">{t.tipo === 'gasto' ? `→ ${partnerBank.nombre}` : `← ${partnerBank.nombre}`}</Badge>
+                          )}
+                          {t.cuotaGrupoId && <Badge tone="slate">Cuota {t.cuotaNumero}/{t.cuotaTotalCuotas}</Badge>}
+                          {t.nota || (!t.transferId && !t.cuotaGrupoId && '—')}
+                        </span>
+                      </td>
                       <td className={`${styles.amountCell} mono ${t.tipo === 'gasto' ? 'text-expense' : 'text-income'}`}>
                         {t.tipo === 'gasto' ? '-' : '+'}
                         {formatMoney(t.monto, settings.moneda)}
@@ -177,6 +199,12 @@ export default function Transactions() {
 
       {editing && (
         <TransactionForm onClose={() => setEditing(null)} existing={editing === 'new' ? undefined : editing} />
+      )}
+      {transferEditing && (
+        <TransferForm
+          onClose={() => setTransferEditing(null)}
+          existing={transferEditing === 'new' ? undefined : transferEditing}
+        />
       )}
     </div>
   );

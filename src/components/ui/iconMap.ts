@@ -1,4 +1,5 @@
 import {
+  ArrowLeftRight,
   Banknote,
   BookOpen,
   Car,
@@ -34,6 +35,7 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   shield: Shield,
   plane: Plane,
   laptop: Laptop,
+  'arrow-left-right': ArrowLeftRight,
 };
 
 export function getIcon(name: string): LucideIcon {

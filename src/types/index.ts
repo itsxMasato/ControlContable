@@ -30,6 +30,14 @@ export interface Transaction {
   nota: string;
   monto: number; // siempre positivo, el signo lo da `tipo`
   tipo: TransactionType;
+  /** Id compartido por todas las cuotas de una misma compra, si se registró en cuotas. */
+  cuotaGrupoId?: string | null;
+  /** Número de esta cuota dentro del grupo (1-based). */
+  cuotaNumero?: number | null;
+  /** Cantidad total de cuotas del grupo. */
+  cuotaTotalCuotas?: number | null;
+  /** Id compartido por las dos transacciones (salida/entrada) de una transferencia entre cuentas. */
+  transferId?: string | null;
 }
 
 export interface Contribution {
