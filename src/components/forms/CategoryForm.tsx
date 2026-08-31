@@ -5,7 +5,27 @@ import formStyles from '../ui/Form.module.css';
 import { useAppData } from '../../context/AppDataContext';
 import { useTheme } from '../../context/ThemeContext';
 import { getChartPalette } from '../../utils/chartPalette';
+import { getIcon } from '../ui/iconMap';
 import type { Category } from '../../types';
+
+const ICONS = [
+  { value: 'utensils', label: 'Comida' },
+  { value: 'car', label: 'Transporte' },
+  { value: 'home', label: 'Hogar' },
+  { value: 'popcorn', label: 'Entretenimiento' },
+  { value: 'heart-pulse', label: 'Salud' },
+  { value: 'book-open', label: 'Educación' },
+  { value: 'banknote', label: 'Finanzas' },
+  { value: 'piggy-bank', label: 'Ahorro' },
+  { value: 'credit-card', label: 'Tarjeta' },
+  { value: 'wallet', label: 'Billetera' },
+  { value: 'shield', label: 'Seguros' },
+  { value: 'plane', label: 'Viajes' },
+  { value: 'laptop', label: 'Tecnología' },
+  { value: 'landmark', label: 'Banco' },
+  { value: 'arrow-left-right', label: 'Transferencia' },
+  { value: 'ellipsis', label: 'Otro' },
+];
 
 export default function CategoryForm({
   onClose,
@@ -25,6 +45,7 @@ export default function CategoryForm({
   const [parentId, setParentId] = useState<string>(existing?.parentId ?? defaultParentId ?? '');
   const [presupuesto, setPresupuesto] = useState(existing?.presupuestoMensual ? String(existing.presupuestoMensual) : '');
   const [colorIndex, setColorIndex] = useState(existing?.colorIndex ?? 0);
+  const [icono, setIcono] = useState(existing?.icono ?? ICONS[0].value);
   const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -39,7 +60,7 @@ export default function CategoryForm({
       parentId: parentId || null,
       presupuestoMensual: presupuesto ? parseFloat(presupuesto) : null,
       colorIndex,
-      icono: existing?.icono ?? 'ellipsis',
+      icono,
     };
     if (existing) updateCategory(category);
     else addCategory(category);
@@ -71,6 +92,39 @@ export default function CategoryForm({
               </option>
             ))}
           </select>
+        </div>
+
+        <div className={formStyles.field}>
+          <label className={formStyles.label}>Ícono</label>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {ICONS.map((opt) => {
+              const Icon = getIcon(opt.value);
+              const selected = icono === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setIcono(opt.value)}
+                  title={opt.label}
+                  aria-label={opt.label}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 'var(--radius-md)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: selected ? 'var(--gold-soft)' : 'var(--paper)',
+                    border: selected ? '1.5px solid var(--gold)' : '1px solid var(--border-strong)',
+                    color: selected ? 'var(--gold)' : 'var(--ink-soft)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Icon size={16} strokeWidth={1.8} />
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className={formStyles.row}>

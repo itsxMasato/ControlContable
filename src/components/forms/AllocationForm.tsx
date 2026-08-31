@@ -4,6 +4,7 @@ import Button from '../ui/Button';
 import formStyles from '../ui/Form.module.css';
 import { useAppData } from '../../context/AppDataContext';
 import type { Allocation, Bank } from '../../types';
+import { monthKey, todayISO } from '../../utils/dates';
 
 export default function AllocationForm({
   onClose,
@@ -14,10 +15,11 @@ export default function AllocationForm({
   bank: Bank;
   existing?: Allocation;
 }) {
-  const { addAllocation, updateAllocation, deleteAllocation } = useAppData();
+  const { addAllocation, updateAllocation, deleteAllocation, payAllocation } = useAppData();
   const [nombre, setNombre] = useState(existing?.nombre ?? '');
   const [monto, setMonto] = useState(existing ? String(existing.monto) : '');
   const [nota, setNota] = useState(existing?.nota ?? '');
+  const [recurrente, setRecurrente] = useState(existing?.recurrente ?? false);
   const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -33,8 +35,10 @@ export default function AllocationForm({
       nombre: nombre.trim(),
       monto: montoNum,
       nota: nota.trim(),
-      recurringPaymentId: null,
-      cicloClave: null,
+      recurringPaymentId: existing?.recurringPaymentId ?? null,
+      cicloClave: existing?.cicloClave ?? monthKey(todayISO()),
+      recurrente,
+      montoObjetivo: recurrente ? montoNum : null,
     };
     if (existing) updateAllocation(allocation);
     else addAllocation(allocation);
@@ -82,6 +86,22 @@ export default function AllocationForm({
             onChange={(e) => setNota(e.target.value)}
           />
         </div>
+        <div className={formStyles.field}>
+          <label className={formStyles.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input
+              type="checkbox"
+              checked={recurrente}
+              onChange={(e) => setRecurrente(e.target.checked)}
+              style={{ width: 15, height: 15 }}
+            />
+            Repetir cada mes automáticamente
+          </label>
+          {recurrente && (
+            <p className="text-faint" style={{ fontSize: 12.5, marginTop: 6 }}>
+              Al pagarlo, este apartado se vuelve a apartar solo al llegar el mes siguiente.
+            </p>
+          )}
+        </div>
         {error && <div className={formStyles.error}>{error}</div>}
         <div className={formStyles.actions}>
           {existing && (
@@ -94,6 +114,18 @@ export default function AllocationForm({
               }}
             >
               Eliminar
+            </Button>
+          )}
+          {existing && !existing.recurringPaymentId && existing.monto > 0 && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                payAllocation(existing);
+                onClose();
+              }}
+            >
+              Pagar
             </Button>
           )}
           <Button type="button" variant="secondary" onClick={onClose}>

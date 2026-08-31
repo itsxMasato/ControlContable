@@ -81,8 +81,12 @@ export interface Allocation {
   nota: string;
   /** Si no es null, este apartado lo genera y gestiona automáticamente el pago recurrente indicado. */
   recurringPaymentId?: string | null;
-  /** Ciclo (mes, "YYYY-MM") de vencimiento que cubre este apartado automático. */
+  /** Ciclo ("YYYY-MM") al que corresponde el `monto` actual de este apartado. */
   cicloClave?: string | null;
+  /** true si al llegar un mes nuevo el apartado debe reponerse solo a `montoObjetivo`. */
+  recurrente?: boolean;
+  /** Monto al que se repone este apartado en cada ciclo nuevo, si es recurrente. */
+  montoObjetivo?: number | null;
 }
 
 export type AlertSeverity = 'info' | 'advertencia' | 'logro';

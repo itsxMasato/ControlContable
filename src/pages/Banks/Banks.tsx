@@ -127,6 +127,8 @@ export default function Banks() {
                             <div className={styles.allocationName} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               {a.nombre}
                               {a.recurringPaymentId && <Badge tone="slate">Automático</Badge>}
+                              {a.recurrente && <Badge tone="forest">Mensual</Badge>}
+                              {a.recurrente && a.monto <= 0 && <Badge tone="neutral">Pagado este mes</Badge>}
                             </div>
                             {a.nota && <div className="text-faint" style={{ fontSize: 11.5 }}>{a.nota}</div>}
                           </div>

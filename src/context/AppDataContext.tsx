@@ -13,7 +13,7 @@ import type {
 } from '../types';
 import { ensureMetaDoc, metaDoc, normalizeSettings, replaceAllData, userCollection, userDoc, deleteWhere } from '../firebase/firestoreData';
 import { useAuth } from './AuthContext';
-import { monthKey } from '../utils/dates';
+import { monthKey, todayISO } from '../utils/dates';
 import {
   computePendingForCycle,
   detectRecurringCandidates,
@@ -49,6 +49,7 @@ interface AppDataContextValue {
   addAllocation: (a: Allocation) => void;
   updateAllocation: (a: Allocation) => void;
   deleteAllocation: (id: string) => void;
+  payAllocation: (a: Allocation) => void;
   addTransfer: (input: { fecha: string; origenBankId: string; destinoBankId: string; monto: number; nota: string }) => void;
   updateTransfer: (
     transferId: string,
@@ -123,6 +124,23 @@ function resolveTransferCategory(categories: Category[]): Category {
   };
 }
 
+/** Busca (o crea) una categoría principal con el nombre dado — usada al pagar un apartado, para que
+ * quede registrado bajo una categoría con el mismo nombre y así calce con el apartado en el futuro. */
+function resolveCategoryByName(categories: Category[], nombre: string): Category {
+  const existing = categories.find(
+    (c) => c.parentId === null && c.nombre.trim().toLowerCase() === nombre.trim().toLowerCase()
+  );
+  if (existing) return existing;
+  return {
+    id: crypto.randomUUID(),
+    nombre: nombre.trim(),
+    icono: 'ellipsis',
+    colorIndex: 0,
+    parentId: null,
+    presupuestoMensual: null,
+  };
+}
+
 function AppDataProviderInner({ uid, children }: { uid: string; children: ReactNode }) {
   const [banks, setBanks] = useState<Bank[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -168,6 +186,18 @@ function AppDataProviderInner({ uid, children }: { uid: string; children: ReactN
     });
     for (const c of fresh) void setDoc(userDoc(uid, 'recurringPayments', c.id), c);
   }, [uid, transactions, recurringPayments, categories]);
+
+  useEffect(() => {
+    const cicloActual = monthKey(todayISO());
+    for (const a of allocations) {
+      if (a.recurrente && a.cicloClave !== cicloActual) {
+        void updateDoc(userDoc(uid, 'allocations', a.id), {
+          monto: a.montoObjetivo ?? a.monto,
+          cicloClave: cicloActual,
+        });
+      }
+    }
+  }, [uid, allocations]);
 
   const data: AppData | null = useMemo(
     () =>
@@ -219,9 +249,12 @@ function AppDataProviderInner({ uid, children }: { uid: string; children: ReactN
           } else {
             const matchedAllocation = findMatchingAllocationByCategory(t, data.categories, data.allocations);
             if (matchedAllocation) {
-              const restante = Math.round((matchedAllocation.monto - t.monto) * 100) / 100;
-              if (restante <= 0.01) void deleteDoc(userDoc(uid, 'allocations', matchedAllocation.id));
-              else void updateDoc(userDoc(uid, 'allocations', matchedAllocation.id), { monto: restante });
+              const restante = Math.max(0, Math.round((matchedAllocation.monto - t.monto) * 100) / 100);
+              if (restante <= 0.01 && !matchedAllocation.recurrente) {
+                void deleteDoc(userDoc(uid, 'allocations', matchedAllocation.id));
+              } else {
+                void updateDoc(userDoc(uid, 'allocations', matchedAllocation.id), { monto: restante });
+              }
             }
           }
         }
@@ -311,6 +344,28 @@ function AppDataProviderInner({ uid, children }: { uid: string; children: ReactN
       addAllocation: (a) => void setDoc(userDoc(uid, 'allocations', a.id), a),
       updateAllocation: (a) => void setDoc(userDoc(uid, 'allocations', a.id), a),
       deleteAllocation: (id) => void deleteDoc(userDoc(uid, 'allocations', id)),
+      payAllocation: (a) => {
+        if (a.monto <= 0) return;
+        const category = resolveCategoryByName(data.categories, a.nombre);
+        if (!data.categories.some((c) => c.id === category.id)) {
+          void setDoc(userDoc(uid, 'categories', category.id), category);
+        }
+        const transaction: Transaction = {
+          id: crypto.randomUUID(),
+          fecha: todayISO(),
+          bankId: a.bankId,
+          categoryId: category.id,
+          monto: a.monto,
+          tipo: 'gasto',
+          nota: `Pago de apartado: ${a.nombre}`,
+        };
+        void setDoc(userDoc(uid, 'transactions', transaction.id), transaction);
+        if (a.recurrente) {
+          void updateDoc(userDoc(uid, 'allocations', a.id), { monto: 0, cicloClave: monthKey(todayISO()) });
+        } else {
+          void deleteDoc(userDoc(uid, 'allocations', a.id));
+        }
+      },
       addTransfer: (input) => {
         const category = resolveTransferCategory(data.categories);
         if (!data.categories.some((c) => c.id === category.id)) {
