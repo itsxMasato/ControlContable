@@ -4,11 +4,12 @@ import Button from '../ui/Button';
 import formStyles from '../ui/Form.module.css';
 import { useAppData } from '../../context/AppDataContext';
 import type { Transaction, TransactionType } from '../../types';
-import { addMonthsToDate, todayISO } from '../../utils/dates';
+import { addMonthsToDate, formatDateShort, todayISO } from '../../utils/dates';
 import { formatMoney } from '../../utils/currency';
 import { bankAvailable, findMatchingAllocationByCategory } from '../../utils/calculations';
 import { isLiability, roundMoney } from '../../utils/accounts';
-import { CalendarClock, CircleAlert, Copy, PiggyBank } from 'lucide-react';
+import { CalendarClock, CircleAlert, Copy, PiggyBank, Scissors } from 'lucide-react';
+import { lastCut } from '../../utils/cuts';
 
 export default function TransactionForm({
   onClose,
@@ -54,6 +55,8 @@ export default function TransactionForm({
   const bank = data.banks.find((b) => b.id === bankId);
   const categoryIdSel = subCategoryId || topCategoryId;
   const esFuturo = fecha > todayISO();
+  const ultimoCorte = lastCut(data.cuts ?? []);
+  const enPeriodoCerrado = Boolean(ultimoCorte && (fecha <= ultimoCorte.fecha || (existing && existing.fecha <= ultimoCorte.fecha)));
   const cuotaInicial = enCuotas && !existing ? roundMoney(montoActual / numCuotasPreview) : montoActual;
 
   const insight = useMemo(() => {
@@ -309,6 +312,15 @@ export default function TransactionForm({
                     : isLiability(bank)
                       ? `La deuda de ${bank.nombre} aumentará con este gasto.`
                       : `Deja ${bank.nombre} con ${formatMoney(insight.disponibleDespues, currency)} disponible. Revisá que el monto y la cuenta sean correctos.`}
+                </span>
+              </div>
+            )}
+            {enPeriodoCerrado && ultimoCorte && (
+              <div className="badge" style={{ ...noticeStyle, background: 'var(--slate-soft)', color: 'var(--slate)' }}>
+                <Scissors size={15} style={{ flexShrink: 0 }} />
+                <span>
+                  Este movimiento cae en un período ya cortado (hasta el {formatDateShort(ultimoCorte.fecha)}). Los saldos de
+                  ese corte no cambian; la diferencia se refleja en el saldo de arranque del período actual.
                 </span>
               </div>
             )}

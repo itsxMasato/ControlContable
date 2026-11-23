@@ -1,0 +1,205 @@
+.current {
+  position: relative;
+  overflow: hidden;
+}
+
+.current::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: var(--hero-gradient);
+}
+
+.currentHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.currentIcon,
+.cutIcon {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+
+.currentTitle {
+  font-family: var(--font-serif);
+  font-weight: 800;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  font-weight: 800;
+  font-size: 16px;
+  min-width: 0;
+}
+
+.statLabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-faint);
+}
+
+.tableWrap {
+  overflow-x: auto;
+  margin: 0 -4px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table th {
+  text-align: right;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.table th:first-child,
+.table td:first-child {
+  text-align: left;
+  font-weight: 650;
+}
+
+.table td {
+  text-align: right;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.tag {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--brick-soft);
+  color: var(--brick);
+}
+
+.adjust {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cut {
+  padding: 0;
+  overflow: hidden;
+}
+
+.cutHead {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: transparent;
+  border: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cutMeta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cutTitle {
+  font-weight: 750;
+  font-size: 14.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cutNet {
+  font-weight: 800;
+  font-size: 14.5px;
+  white-space: nowrap;
+}
+
+.chev {
+  color: var(--ink-faint);
+  flex-shrink: 0;
+  transition: transform var(--dur-med) var(--ease-out);
+}
+
+.cutOpen .chev {
+  transform: rotate(180deg);
+}
+
+.cutBody {
+  padding: 0 16px 16px;
+  animation: fade-up var(--dur-med) var(--ease-out) both;
+}
+
+.note {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.cutActions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}

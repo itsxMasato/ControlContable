@@ -5,7 +5,7 @@ import { metaDoc, userCollection } from '../firebase/firestoreData';
 
 export type SyncState = 'offline' | 'pending' | 'synced';
 
-const COLLECTIONS = ['banks', 'categories', 'transactions', 'savingsGoals', 'recurringPayments', 'allocations'] as const;
+const COLLECTIONS = ['banks', 'categories', 'transactions', 'savingsGoals', 'recurringPayments', 'allocations', 'cuts'] as const;
 
 /**
  * Estado de sincronización con la nube:

@@ -54,6 +54,8 @@ export interface Transaction {
    * si el movimiento se edita o se elimina (así el dinero apartado nunca "desaparece").
    */
   apartado?: AllocationConsumption | null;
+  /** Si es un ajuste creado al conciliar un corte, el id de ese corte. No cuenta como ingreso/gasto real. */
+  ajusteCorteId?: string | null;
 }
 
 export interface AllocationConsumption {
@@ -119,6 +121,37 @@ export interface Allocation {
   categoryId?: string | null;
 }
 
+export interface CutAccount {
+  bankId: string;
+  nombre: string;
+  /** Saldo de la cuenta al cierre del período anterior (o saldo inicial si es el primer corte). */
+  saldoInicioPeriodo: number;
+  ingresos: number;
+  gastos: number;
+  /** Saldo calculado por la app a la fecha del corte, antes de ajustar. */
+  saldoSistema: number;
+  /** Saldo real informado por el usuario (el que muestra el banco). */
+  saldoReal: number;
+  /** saldoReal − saldoSistema. Si no es 0 se registró un movimiento de ajuste. */
+  ajuste: number;
+}
+
+/** Corte de cuentas: cierra un período y deja una foto de los saldos, opcionalmente conciliados. */
+export interface Cut {
+  id: string;
+  /** Fecha de cierre (YYYY-MM-DD), incluida en el período. */
+  fecha: string;
+  /** Fecha del corte anterior (excluida). null si es el primero. */
+  desde: string | null;
+  creadoEn: string;
+  nombre: string;
+  nota: string;
+  cuentas: CutAccount[];
+  totales: { ingresos: number; gastos: number; neto: number; ajustes: number };
+  /** Movimientos de ajuste creados al conciliar; se borran si se elimina el corte. */
+  ajusteTxIds: string[];
+}
+
 export type AlertSeverity = 'info' | 'advertencia' | 'logro';
 
 export type AlertType =
@@ -141,7 +174,20 @@ export interface AppAlert {
 
 export type Currency = 'MXN' | 'USD' | 'ARS' | 'COP' | 'PEN' | 'EUR' | 'HNL';
 
-export type AccentColor = 'dorado' | 'verde' | 'morado' | 'rosa' | 'azul';
+export type AccentColor =
+  | 'dorado'
+  | 'verde'
+  | 'morado'
+  | 'rosa'
+  | 'azul'
+  | 'rojo'
+  | 'naranja'
+  | 'ambar'
+  | 'lima'
+  | 'turquesa'
+  | 'cian'
+  | 'indigo'
+  | 'grafito';
 
 export type AIProvider = 'openai' | 'claude' | 'gemini';
 
@@ -168,6 +214,8 @@ export interface AppData {
   savingsGoals: SavingsGoal[];
   recurringPayments: RecurringPayment[];
   allocations: Allocation[];
+  /** Puede faltar en respaldos exportados antes de existir los cortes. */
+  cuts?: Cut[];
   dismissedAlertIds: string[];
   settings: AppSettings;
 }

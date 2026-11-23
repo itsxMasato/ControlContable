@@ -11,7 +11,7 @@ import {
 import type { AppData, AppSettings } from '../types';
 import { db } from './config';
 
-const COLLECTIONS = ['banks', 'categories', 'transactions', 'savingsGoals', 'recurringPayments', 'allocations'] as const;
+const COLLECTIONS = ['banks', 'categories', 'transactions', 'savingsGoals', 'recurringPayments', 'allocations', 'cuts'] as const;
 type CollectionName = (typeof COLLECTIONS)[number];
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -76,6 +76,7 @@ async function writeFullAppData(uid: string, data: AppData) {
       data: r as unknown as Record<string, unknown>,
     })),
     ...data.allocations.map((a) => ({ type: 'set' as const, ref: userDoc(uid, 'allocations', a.id), data: a as unknown as Record<string, unknown> })),
+    ...(data.cuts ?? []).map((c) => ({ type: 'set' as const, ref: userDoc(uid, 'cuts', c.id), data: c as unknown as Record<string, unknown> })),
   ];
   await commitInChunks(ops);
   const batch = writeBatch(db);

@@ -7,6 +7,7 @@ import type {
   Bank,
   Category,
   Contribution,
+  Cut,
   RecurringPayment,
   SavingsGoal,
   Transaction,
@@ -24,6 +25,7 @@ import { findMatchingAllocationByCategory } from '../utils/calculations';
 import Splash from '../components/ui/Splash';
 import { toast } from '../utils/toast';
 import { roundMoney } from '../utils/accounts';
+import { computeCutPreview, lastCut } from '../utils/cuts';
 
 const ACTION_MESSAGES: Partial<Record<keyof AppDataContextValue, string>> = {
   addTransaction: 'Movimiento registrado',
@@ -51,6 +53,8 @@ const ACTION_MESSAGES: Partial<Record<keyof AppDataContextValue, string>> = {
   addTransfer: 'Transferencia registrada',
   updateTransfer: 'Transferencia actualizada',
   importData: 'Datos importados',
+  addCut: 'Corte realizado',
+  deleteCut: 'Corte eliminado',
   clearAll: 'Datos borrados',
 };
 
@@ -105,6 +109,9 @@ interface AppDataContextValue {
   updateSettings: (s: Partial<AppSettings>) => void;
   clearAll: () => void;
   importData: (d: AppData) => void;
+  /** Cierra el período hasta `fecha`. `saldosReales` (por cuenta) concilia con el banco creando ajustes. */
+  addCut: (input: { fecha: string; nombre: string; nota: string; saldosReales: Record<string, number> }) => void;
+  deleteCut: (id: string) => void;
 }
 
 const AppDataContext = createContext<AppDataContextValue | null>(null);
@@ -120,6 +127,7 @@ interface MetaDoc {
 
 const SAVINGS_CATEGORY_NAME = 'Ahorro';
 const TRANSFER_CATEGORY_NAME = 'Transferencia';
+const ADJUSTMENT_CATEGORY_NAME = 'Ajuste de corte';
 
 /** Categoría fija usada para los aportes a metas — el usuario nunca la elige, así el aporte
  * queda registrado como movimiento sin forzarlo a clasificarlo entre categorías de gasto. */
@@ -178,6 +186,7 @@ function AppDataProviderInner({ uid, children }: { uid: string; children: ReactN
   const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
   const [recurringPayments, setRecurringPayments] = useState<RecurringPayment[]>([]);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
+  const [cuts, setCuts] = useState<Cut[]>([]);
   const [meta, setMeta] = useState<MetaDoc | null>(null);
   const initializedFor = useRef<string | null>(null);
 
@@ -196,6 +205,7 @@ function AppDataProviderInner({ uid, children }: { uid: string; children: ReactN
         setRecurringPayments(snap.docs.map((d) => d.data() as RecurringPayment))
       ),
       onSnapshot(userCollection(uid, 'allocations'), (snap) => setAllocations(snap.docs.map((d) => d.data() as Allocation))),
+      onSnapshot(userCollection(uid, 'cuts'), (snap) => setCuts(snap.docs.map((d) => d.data() as Cut))),
       onSnapshot(metaDoc(uid), (snap) => {
         if (snap.exists()) setMeta(snap.data() as MetaDoc);
       }),
@@ -239,11 +249,12 @@ function AppDataProviderInner({ uid, children }: { uid: string; children: ReactN
             savingsGoals,
             recurringPayments,
             allocations,
+            cuts,
             dismissedAlertIds: meta.dismissedAlertIds,
             settings: normalizeSettings(meta.settings),
           }
         : null,
-    [banks, categories, transactions, savingsGoals, recurringPayments, allocations, meta]
+    [banks, categories, transactions, savingsGoals, recurringPayments, allocations, cuts, meta]
   );
 
   const rawValue: AppDataContextValue | null = useMemo(() => {
@@ -540,10 +551,68 @@ function AppDataProviderInner({ uid, children }: { uid: string; children: ReactN
           savingsGoals: [],
           recurringPayments: [],
           allocations: [],
+          cuts: [],
           dismissedAlertIds: [],
           settings: data.settings,
         }).catch((err) => console.error(err)),
       importData: (d) => void replaceAllData(uid, d).catch((err) => console.error(err)),
+      addCut: ({ fecha, nombre, nota, saldosReales }) => {
+        const previous = lastCut(data.cuts ?? []);
+        const desde = previous ? previous.fecha : null;
+        const preview = computeCutPreview(data.banks, data.transactions, desde, fecha);
+        const cutId = crypto.randomUUID();
+        const ajusteTxIds: string[] = [];
+        let ajustesTotal = 0;
+        let ajusteCategory: Category | null = null;
+
+        const cuentas = preview.cuentas.map((c) => {
+          const saldoReal = roundMoney(saldosReales[c.bankId] ?? c.saldoSistema);
+          const ajuste = roundMoney(saldoReal - c.saldoSistema);
+          if (Math.abs(ajuste) >= 0.01) {
+            if (!ajusteCategory) {
+              ajusteCategory = resolveCategoryByName(data.categories, ADJUSTMENT_CATEGORY_NAME);
+              if (!data.categories.some((x) => x.id === ajusteCategory!.id)) {
+                ajusteCategory = { ...ajusteCategory, icono: 'scale' };
+                void setDoc(userDoc(uid, 'categories', ajusteCategory.id), ajusteCategory);
+              }
+            }
+            const tx: Transaction = {
+              id: crypto.randomUUID(),
+              fecha,
+              bankId: c.bankId,
+              categoryId: ajusteCategory.id,
+              monto: Math.abs(ajuste),
+              tipo: ajuste > 0 ? 'ingreso' : 'gasto',
+              nota: `Ajuste de corte${nombre ? ` "${nombre}"` : ''}: diferencia con el saldo real`,
+              ajusteCorteId: cutId,
+              apartado: null,
+            };
+            void setDoc(userDoc(uid, 'transactions', tx.id), tx);
+            ajusteTxIds.push(tx.id);
+            ajustesTotal = roundMoney(ajustesTotal + ajuste);
+          }
+          return { ...c, saldoReal, ajuste };
+        });
+
+        const cut: Cut = {
+          id: cutId,
+          fecha,
+          desde,
+          creadoEn: new Date().toISOString(),
+          nombre: nombre.trim(),
+          nota: nota.trim(),
+          cuentas,
+          totales: { ...preview.totales, ajustes: ajustesTotal },
+          ajusteTxIds,
+        };
+        void setDoc(userDoc(uid, 'cuts', cut.id), cut);
+      },
+      deleteCut: (id) => {
+        const cut = (data.cuts ?? []).find((c) => c.id === id);
+        if (!cut) return;
+        for (const txId of cut.ajusteTxIds) void deleteDoc(userDoc(uid, 'transactions', txId));
+        void deleteDoc(userDoc(uid, 'cuts', id));
+      },
     };
   }, [uid, data]);
 

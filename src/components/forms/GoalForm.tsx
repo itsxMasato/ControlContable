@@ -1,18 +1,15 @@
 import { useState } from 'react';
 import Modal from '../ui/Modal';
+import ColorPicker from '../ui/ColorPicker';
 import Button from '../ui/Button';
 import formStyles from '../ui/Form.module.css';
 import { useAppData } from '../../context/AppDataContext';
-import { useTheme } from '../../context/ThemeContext';
-import { getChartPalette } from '../../utils/chartPalette';
 import type { SavingsGoal } from '../../types';
 import IconPicker from '../ui/IconPicker';
 
 
 export default function GoalForm({ onClose, existing }: { onClose: () => void; existing?: SavingsGoal }) {
   const { data, addGoal, updateGoal, deleteGoal } = useAppData();
-  const { accent, dark } = useTheme();
-  const COLORS = getChartPalette(accent, dark);
   const [nombre, setNombre] = useState(existing?.nombre ?? '');
   const [montoObjetivo, setMontoObjetivo] = useState(existing ? String(existing.montoObjetivo) : '');
   const [fechaObjetivo, setFechaObjetivo] = useState(existing?.fechaObjetivo ?? '');
@@ -107,24 +104,7 @@ export default function GoalForm({ onClose, existing }: { onClose: () => void; e
         <div>
           <div className={formStyles.field}>
             <label className={formStyles.label}>Color</label>
-            <div style={{ display: 'flex', gap: 6, paddingTop: 4, flexWrap: 'wrap' }}>
-              {COLORS.map((c, i) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setColorIndex(i)}
-                  style={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: '50%',
-                    background: c,
-                    border: colorIndex === i ? '2px solid var(--ink)' : '2px solid transparent',
-                    cursor: 'pointer',
-                  }}
-                  aria-label={`Color ${c}`}
-                />
-              ))}
-            </div>
+            <ColorPicker value={colorIndex} onChange={setColorIndex} />
           </div>
         </div>
 

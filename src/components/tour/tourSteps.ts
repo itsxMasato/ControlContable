@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   PiggyBank,
   Plus,
+  Scissors,
   ShieldCheck,
   Tags,
   Target,
@@ -93,11 +94,19 @@ export const TOUR_STEPS: TourStep[] = [
     body: 'Creá una meta con monto y fecha objetivo. Cada aporte se descuenta de la cuenta elegida y la app te estima cuándo la vas a alcanzar.',
   },
   {
+    route: '/cortes',
+    target: '[data-tour="cut-add"]',
+    icon: Scissors,
+    title: 'Cortes cuando quieras',
+    body: 'Un corte cierra un período (quincena, mes o el que elijas) y guarda la foto de tus saldos con ingresos, gastos y ahorro neto. Podés escribir el saldo real del banco: si no coincide, se registra un ajuste para que todo cuadre.',
+    tip: 'Hacé un corte cada vez que te llega el estado de cuenta: es la mejor forma de detectar movimientos que olvidaste anotar.',
+  },
+  {
     route: '/',
     target: '[data-tour="analysis"]',
     icon: BarChart3,
     title: 'Reportes, alertas y asistente',
-    body: 'En Reportes ves tendencias por mes y año. Las Alertas te avisan de presupuestos excedidos y pagos próximos. El Asistente IA responde preguntas sobre tus finanzas.',
+    body: 'En Reportes ves tendencias por mes y año, y en Cortes el historial de tus cierres. Las Alertas te avisan de presupuestos excedidos y pagos próximos. El Asistente IA responde preguntas sobre tus finanzas.',
   },
   {
     route: '/',

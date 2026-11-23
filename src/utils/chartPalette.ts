@@ -17,7 +17,52 @@ const START_INDEX: Record<AccentColor, number> = {
   morado: 5, // violet
   rosa: 3, // magenta
   azul: 7, // blue
+  rojo: 6, // red
+  naranja: 0, // orange
+  ambar: 2, // yellow
+  lima: 4, // green
+  turquesa: 1, // aqua
+  cian: 1, // aqua
+  indigo: 5, // violet
+  grafito: 7, // blue
 };
+
+/**
+ * Colores extra fijos (no rotan con el tema), cada uno con variante para modo claro y oscuro.
+ * Se guardan como `colorIndex = EXTRA_BASE + i` para no cambiar el esquema de datos.
+ */
+export const EXTRA_BASE = 100;
+export const EXTRA_COLORS: { name: string; light: string; dark: string }[] = [
+  { name: 'Rojo', light: '#dc2626', dark: '#f87171' },
+  { name: 'Coral', light: '#f05d4f', dark: '#ff8a7a' },
+  { name: 'Naranja', light: '#ea580c', dark: '#fb923c' },
+  { name: 'Ámbar', light: '#d97706', dark: '#fbbf24' },
+  { name: 'Amarillo', light: '#ca8a04', dark: '#facc15' },
+  { name: 'Lima', light: '#65a30d', dark: '#a3e635' },
+  { name: 'Verde', light: '#16a34a', dark: '#4ade80' },
+  { name: 'Esmeralda', light: '#059669', dark: '#34d399' },
+  { name: 'Turquesa', light: '#0d9488', dark: '#2dd4bf' },
+  { name: 'Cian', light: '#0891b2', dark: '#22d3ee' },
+  { name: 'Celeste', light: '#0284c7', dark: '#38bdf8' },
+  { name: 'Azul', light: '#2563eb', dark: '#60a5fa' },
+  { name: 'Índigo', light: '#4f46e5', dark: '#818cf8' },
+  { name: 'Violeta', light: '#7c3aed', dark: '#a78bfa' },
+  { name: 'Fucsia', light: '#c026d3', dark: '#e879f9' },
+  { name: 'Rosa', light: '#db2777', dark: '#f472b6' },
+  { name: 'Café', light: '#92400e', dark: '#d6a372' },
+  { name: 'Grafito', light: '#52525b', dark: '#a1a1aa' },
+];
+
+/** Color totalmente personalizado: `colorIndex = CUSTOM_BASE + 0xRRGGBB`. */
+export const CUSTOM_BASE = 1_000_000_000;
+
+export function encodeCustomColor(hex: string): number {
+  return CUSTOM_BASE + parseInt(hex.replace('#', '').slice(0, 6), 16);
+}
+
+export function decodeCustomColor(colorIndex: number): string {
+  return `#${(colorIndex - CUSTOM_BASE).toString(16).padStart(6, '0')}`;
+}
 
 function rotate(ring: string[], start: number): string[] {
   return [...ring.slice(start), ...ring.slice(0, start)];
@@ -41,6 +86,11 @@ export function resolveThemeColor(
   dark: boolean
 ): string {
   const palette = getChartPalette(accent, dark);
+  if (typeof colorIndex === 'number' && colorIndex >= CUSTOM_BASE) return decodeCustomColor(colorIndex);
+  if (typeof colorIndex === 'number' && colorIndex >= EXTRA_BASE) {
+    const extra = EXTRA_COLORS[colorIndex - EXTRA_BASE];
+    if (extra) return dark ? extra.dark : extra.light;
+  }
   if (typeof colorIndex === 'number' && Number.isFinite(colorIndex)) {
     return palette[((colorIndex % palette.length) + palette.length) % palette.length];
   }

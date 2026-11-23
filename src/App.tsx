@@ -9,6 +9,7 @@ import Reports from './pages/Reports/Reports';
 import Alerts from './pages/Alerts/Alerts';
 import Settings from './pages/Settings/Settings';
 import Assistant from './pages/Assistant/Assistant';
+import Cuts from './pages/Cuts/Cuts';
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/categorias" element={<Categories />} />
         <Route path="/ahorros" element={<Savings />} />
         <Route path="/reportes" element={<Reports />} />
+        <Route path="/cortes" element={<Cuts />} />
         <Route path="/alertas" element={<Alerts />} />
         <Route path="/asistente" element={<Assistant />} />
         <Route path="/configuracion" element={<Settings />} />

@@ -6,6 +6,7 @@ import {
   Landmark,
   LayoutDashboard,
   PiggyBank,
+  Scissors,
   Settings,
   Sparkles,
   Tags,
@@ -30,6 +31,7 @@ const NAV_GROUPS = [
     label: 'Análisis',
     items: [
       { to: '/reportes', label: 'Reportes', icon: BarChart3, end: false },
+      { to: '/cortes', label: 'Cortes', icon: Scissors, end: false },
       { to: '/alertas', label: 'Alertas', icon: Bell, end: false },
       { to: '/asistente', label: 'Asistente IA', icon: Sparkles, end: false },
     ],

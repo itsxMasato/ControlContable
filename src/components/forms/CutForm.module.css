@@ -1,0 +1,129 @@
+.intro {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  font-weight: 800;
+  font-size: 14px;
+  min-width: 0;
+}
+
+.summaryLabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-faint);
+}
+
+.accounts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.account {
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--paper);
+}
+
+.accountHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.accountName {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.accountRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.accountRow input {
+  background: var(--card);
+}
+
+.diff {
+  flex-shrink: 0;
+  min-width: 92px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  transition: background-color var(--dur-med) ease, color var(--dur-med) ease;
+}
+
+.diffOk {
+  background: var(--forest-soft);
+  color: var(--forest);
+}
+
+.diffUp {
+  background: var(--slate-soft);
+  color: var(--slate);
+}
+
+.diffDown {
+  background: var(--brick-soft);
+  color: var(--brick);
+}
+
+.adjustNotice {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--gold-soft);
+  font-size: 12.5px;
+  line-height: 1.45;
+  margin-bottom: 16px;
+  animation: fade-up var(--dur-med) var(--ease-out) both;
+}
+
+.adjustNotice svg {
+  color: var(--gold);
+}
+
+@media (max-width: 640px) {
+  .summary {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+  }
+  .summary > div {
+    padding: 8px 10px;
+    font-size: 12.5px;
+  }
+}

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { CirclePlay, Download, FileSpreadsheet, ListChecks, LogOut, Plus, Upload } from 'lucide-react';
+import { Check, CirclePlay, Download, FileSpreadsheet, ListChecks, LogOut, Plus, Upload } from 'lucide-react';
 import { startTour } from '../../components/tour/GuidedTour';
 import styles from './Settings.module.css';
 import { useAppData } from '../../context/AppDataContext';
@@ -111,28 +111,25 @@ export default function Settings() {
             <span className={`${styles.switchKnob} ${dark ? styles.switchKnobOn : ''}`} />
           </button>
         </div>
-        <div className={styles.row}>
+        <div className={styles.paletteBlock}>
           <div>
-            <div className={styles.rowLabel}>Paleta de colores</div>
-            <div className={styles.rowSub}>Cambia el fondo, las tarjetas y los acentos de toda la app.</div>
+            <div className={styles.rowLabel}>Color de la app</div>
+            <div className={styles.rowSub}>Cambia el fondo, las tarjetas, los botones y los gráficos de toda la app.</div>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className={styles.paletteGrid}>
             {ACCENT_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
                 onClick={() => setAccent(opt.value)}
-                aria-label={opt.label}
-                title={opt.label}
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: '50%',
-                  background: opt.swatch,
-                  border: accent === opt.value ? '2px solid var(--ink)' : '2px solid transparent',
-                  cursor: 'pointer',
-                }}
-              />
+                aria-pressed={accent === opt.value}
+                className={`${styles.paletteOption} ${accent === opt.value ? styles.paletteOptionActive : ''}`}
+              >
+                <span className={styles.paletteSwatch} style={{ background: opt.swatch }}>
+                  {accent === opt.value && <Check size={13} strokeWidth={3} />}
+                </span>
+                {opt.label}
+              </button>
             ))}
           </div>
         </div>

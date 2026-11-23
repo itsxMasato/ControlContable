@@ -1,20 +1,17 @@
 import { useState } from 'react';
 import Modal from '../ui/Modal';
+import ColorPicker from '../ui/ColorPicker';
 import Button from '../ui/Button';
 import IconPicker from '../ui/IconPicker';
 import formStyles from '../ui/Form.module.css';
 import styles from './BankForm.module.css';
 import { useAppData } from '../../context/AppDataContext';
-import { useTheme } from '../../context/ThemeContext';
-import { getChartPalette } from '../../utils/chartPalette';
 import { ACCOUNT_TYPES, accountTypeInfo, roundMoney } from '../../utils/accounts';
 import { getIcon } from '../ui/iconMap';
 import type { AccountType, Bank } from '../../types';
 
 export default function BankForm({ onClose, existing }: { onClose: () => void; existing?: Bank }) {
   const { data, addBank, updateBank, deleteBank } = useAppData();
-  const { accent, dark } = useTheme();
-  const COLORS = getChartPalette(accent, dark);
   const [nombre, setNombre] = useState(existing?.nombre ?? '');
   const [tipo, setTipo] = useState<AccountType>(existing?.tipo ?? 'corriente');
   const info = accountTypeInfo(tipo);
@@ -145,27 +142,7 @@ export default function BankForm({ onClose, existing }: { onClose: () => void; e
 
         <div className={formStyles.field}>
           <label className={formStyles.label}>Color</label>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {COLORS.map((c, i) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setColorIndex(i)}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: '50%',
-                  background: c,
-                  border: '3px solid var(--card)',
-                  outline: colorIndex === i ? '2px solid var(--ink)' : '2px solid transparent',
-                  cursor: 'pointer',
-                  transition: 'transform 160ms ease',
-                  transform: colorIndex === i ? 'scale(1.1)' : 'none',
-                }}
-                aria-label={`Color ${i + 1}`}
-              />
-            ))}
-          </div>
+          <ColorPicker value={colorIndex} onChange={setColorIndex} />
         </div>
 
         <div className={formStyles.field}>
