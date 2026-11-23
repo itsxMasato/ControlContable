@@ -1,58 +1,87 @@
 .btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-weight: 600;
+  font-weight: 650;
   font-size: 14px;
-  border-radius: var(--radius-md);
-  padding: 10px 16px;
+  letter-spacing: -0.005em;
+  border-radius: 12px;
+  padding: 11px 18px;
+  min-height: 42px;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease, color 150ms ease;
+  overflow: hidden;
+  isolation: isolate;
+  transition: border-color var(--dur-fast) ease, background-color var(--dur-fast) ease,
+    transform var(--dur-fast) var(--ease-out), color var(--dur-fast) ease, box-shadow var(--dur-med) ease,
+    filter var(--dur-fast) ease;
   white-space: nowrap;
+  user-select: none;
 }
 
-.btn:active {
-  transform: translateY(1px);
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .primary {
   background: var(--gold);
-  color: var(--card);
+  color: var(--on-accent);
   border-color: var(--gold);
+  box-shadow: var(--shadow-accent);
 }
 
-.primary:hover {
-  background: var(--ink);
-  border-color: var(--ink);
+/* Brillo que cruza el botón primario al pasar el cursor */
+.primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.28) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 600ms var(--ease-out);
 }
 
-:root[data-theme='dark'] .primary:hover {
-  background: var(--gold-soft);
-  color: var(--gold);
+@media (hover: hover) {
+  .primary:hover:not(:disabled) {
+    filter: brightness(1.06);
+    box-shadow: 0 14px 32px -10px color-mix(in srgb, var(--gold) 80%, transparent);
+  }
+  .primary:hover::after {
+    transform: translateX(120%);
+  }
+  .secondary:hover:not(:disabled) {
+    border-color: var(--border-strong);
+    background: var(--border);
+  }
+  .ghost:hover:not(:disabled) {
+    color: var(--ink);
+    background: var(--border);
+  }
+  .danger:hover:not(:disabled) {
+    background: var(--brick-soft);
+    border-color: color-mix(in srgb, var(--brick) 40%, transparent);
+  }
 }
 
 .secondary {
-  background: transparent;
+  background: var(--card);
   color: var(--ink);
   border-color: var(--border-strong);
-}
-
-.secondary:hover {
-  border-color: var(--ink);
+  box-shadow: var(--shadow-sm);
 }
 
 .ghost {
   background: transparent;
   color: var(--ink-soft);
   border-color: transparent;
-  padding: 8px 10px;
-}
-
-.ghost:hover {
-  color: var(--ink);
-  background: var(--gold-soft);
+  padding: 8px 12px;
 }
 
 .danger {
@@ -61,15 +90,34 @@
   border-color: var(--brick-soft);
 }
 
-.danger:hover {
-  background: var(--brick-soft);
-}
-
 .small {
-  padding: 6px 12px;
+  padding: 7px 13px;
+  min-height: 36px;
   font-size: 13px;
+  border-radius: 10px;
 }
 
 .full {
   width: 100%;
+}
+
+@media (max-width: 640px) {
+  .btn {
+    min-height: 46px;
+  }
+  .small {
+    min-height: 38px;
+  }
+}
+
+.armed {
+  background: var(--brick) !important;
+  border-color: var(--brick) !important;
+  color: #fff !important;
+  animation: armed-pulse 1s ease-in-out infinite;
+}
+
+@keyframes armed-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--brick) 45%, transparent); }
+  50% { box-shadow: 0 0 0 6px transparent; }
 }

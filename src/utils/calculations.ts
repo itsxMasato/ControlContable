@@ -1,5 +1,6 @@
 import type { Allocation, Bank, Category, SavingsGoal, Transaction } from '../types';
 import { isoWeekKey, lastNMonthKeys, monthKey, startOfWeek, todayISO } from './dates';
+import { isLiability, roundMoney } from './accounts';
 
 export function signedAmount(t: Transaction): number {
   return t.tipo === 'ingreso' ? t.monto : -t.monto;
@@ -9,20 +10,43 @@ export function bankBalance(bank: Bank, transactions: Transaction[]): number {
   const delta = transactions
     .filter((t) => t.bankId === bank.id)
     .reduce((sum, t) => sum + signedAmount(t), 0);
-  return bank.saldoInicial + delta;
+  return roundMoney(bank.saldoInicial + delta);
 }
 
 export function bankAllocatedTotal(bankId: string, allocations: Allocation[]): number {
   return allocations.filter((a) => a.bankId === bankId).reduce((sum, a) => sum + a.monto, 0);
 }
 
+/**
+ * Dinero que realmente se puede usar: saldo − apartados. En una tarjeta de crédito con límite,
+ * el saldo es negativo (deuda), así que el disponible es límite − deuda − apartados.
+ */
 export function bankAvailable(bank: Bank, transactions: Transaction[], allocations: Allocation[]): number {
-  return bankBalance(bank, transactions) - bankAllocatedTotal(bank.id, allocations);
+  const balance = bankBalance(bank, transactions);
+  const base = bank.tipo === 'credito' && bank.limiteCredito ? bank.limiteCredito + balance : balance;
+  return roundMoney(base - bankAllocatedTotal(bank.id, allocations));
+}
+
+/** Activos (lo que tenés), deudas (lo que debés) y patrimonio neto = activos − deudas. */
+export function netWorthBreakdown(banks: Bank[], transactions: Transaction[]) {
+  let activos = 0;
+  let deudas = 0;
+  for (const b of banks) {
+    const bal = bankBalance(b, transactions);
+    if (isLiability(b)) {
+      if (bal < 0) deudas += -bal;
+      else activos += bal; // saldo a favor en la tarjeta
+    } else if (bal >= 0) activos += bal;
+    else deudas += -bal; // sobregiro
+  }
+  return { activos: roundMoney(activos), deudas: roundMoney(deudas), neto: roundMoney(activos - deudas) };
 }
 
 /**
- * Busca un apartado manual de la misma cuenta cuyo nombre coincida con la categoría (o su categoría
- * padre) del gasto, para descontarlo automáticamente de ese apartado en vez de solo del saldo general.
+ * Busca el apartado de la misma cuenta que corresponde al gasto:
+ * 1) uno vinculado explícitamente a la categoría del gasto o a su categoría padre;
+ * 2) si no hay, uno cuyo nombre coincida con esa categoría (compatibilidad con apartados viejos).
+ * Los apartados automáticos de pagos recurrentes se gestionan aparte y no entran acá.
  */
 export function findMatchingAllocationByCategory(
   t: Transaction,
@@ -32,12 +56,14 @@ export function findMatchingAllocationByCategory(
   const category = categories.find((c) => c.id === t.categoryId);
   if (!category) return undefined;
   const parent = category.parentId ? categories.find((c) => c.id === category.parentId) : null;
+  const sameBank = allocations.filter((a) => a.bankId === t.bankId && !a.recurringPaymentId && a.monto > 0);
+  const byLink =
+    sameBank.find((a) => a.categoryId === category.id) ?? (parent ? sameBank.find((a) => a.categoryId === parent.id) : undefined);
+  if (byLink) return byLink;
   const candidateNames = [category.nombre, parent?.nombre]
     .filter((n): n is string => Boolean(n))
     .map((n) => n.trim().toLowerCase());
-  return allocations.find(
-    (a) => a.bankId === t.bankId && candidateNames.includes(a.nombre.trim().toLowerCase())
-  );
+  return sameBank.find((a) => !a.categoryId && candidateNames.includes(a.nombre.trim().toLowerCase()));
 }
 
 export function totalConsolidatedBalance(banks: Bank[], transactions: Transaction[]): number {

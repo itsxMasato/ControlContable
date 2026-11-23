@@ -21,6 +21,51 @@ import {
   splitIncomeAcrossPending,
 } from '../utils/recurringEngine';
 import { findMatchingAllocationByCategory } from '../utils/calculations';
+import Splash from '../components/ui/Splash';
+import { toast } from '../utils/toast';
+import { roundMoney } from '../utils/accounts';
+
+const ACTION_MESSAGES: Partial<Record<keyof AppDataContextValue, string>> = {
+  addTransaction: 'Movimiento registrado',
+  updateTransaction: 'Movimiento actualizado',
+  deleteTransaction: 'Movimiento eliminado',
+  addBank: 'Cuenta creada',
+  updateBank: 'Cuenta actualizada',
+  deleteBank: 'Cuenta eliminada',
+  addCategory: 'Categoría creada',
+  updateCategory: 'Categoría actualizada',
+  deleteCategory: 'Categoría eliminada',
+  addGoal: 'Meta creada',
+  updateGoal: 'Meta actualizada',
+  deleteGoal: 'Meta eliminada',
+  contributeToGoal: 'Aporte registrado',
+  updateContribution: 'Aporte actualizado',
+  deleteContribution: 'Aporte eliminado',
+  addRecurring: 'Pago recurrente creado',
+  updateRecurring: 'Pago recurrente actualizado',
+  deleteRecurring: 'Pago recurrente eliminado',
+  addAllocation: 'Apartado creado',
+  updateAllocation: 'Apartado actualizado',
+  deleteAllocation: 'Apartado eliminado',
+  payAllocation: 'Apartado pagado',
+  addTransfer: 'Transferencia registrada',
+  updateTransfer: 'Transferencia actualizada',
+  importData: 'Datos importados',
+  clearAll: 'Datos borrados',
+};
+
+function withToasts(v: AppDataContextValue): AppDataContextValue {
+  const wrapped = { ...v } as Record<string, unknown>;
+  for (const [key, message] of Object.entries(ACTION_MESSAGES)) {
+    const fn = v[key as keyof AppDataContextValue] as unknown as (...args: unknown[]) => unknown;
+    wrapped[key] = (...args: unknown[]) => {
+      const result = fn(...args);
+      toast(message!, 'success', navigator.onLine ? undefined : 'Guardado en el teléfono; se sube al volver la conexión');
+      return result;
+    };
+  }
+  return wrapped as unknown as AppDataContextValue;
+}
 
 interface AppDataContextValue {
   data: AppData;
@@ -65,22 +110,7 @@ interface AppDataContextValue {
 const AppDataContext = createContext<AppDataContextValue | null>(null);
 
 function LoadingScreen() {
-  return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'var(--paper)',
-        color: 'var(--ink-soft)',
-        fontFamily: 'var(--font-serif)',
-        fontSize: 16,
-      }}
-    >
-      Cargando tu libro de gastos…
-    </div>
-  );
+  return <Splash message="Cargando tu libro de gastos…" />;
 }
 
 interface MetaDoc {
@@ -216,13 +246,77 @@ function AppDataProviderInner({ uid, children }: { uid: string; children: ReactN
     [banks, categories, transactions, savingsGoals, recurringPayments, allocations, meta]
   );
 
-  const value: AppDataContextValue | null = useMemo(() => {
+  const rawValue: AppDataContextValue | null = useMemo(() => {
     if (!data) return null;
+
+    /**
+     * Descuenta un gasto del apartado que le corresponde (por categoría vinculada o por nombre) y
+     * devuelve el movimiento con el registro de cuánto consumió. Solo aplica a gastos ya ocurridos:
+     * una cuota futura no toca el dinero apartado hoy.
+     */
+    const consumeAllocation = (t: Transaction, allocations: Allocation[]): Transaction => {
+      if (t.tipo !== 'gasto' || t.fecha > todayISO()) return { ...t, apartado: null };
+      const match = findMatchingAllocationByCategory(t, data.categories, allocations);
+      if (!match) return { ...t, apartado: null };
+      const usado = roundMoney(Math.min(match.monto, t.monto));
+      const restante = roundMoney(match.monto - usado);
+      if (restante <= 0.009 && !match.recurrente) {
+        void deleteDoc(userDoc(uid, 'allocations', match.id));
+      } else {
+        void updateDoc(userDoc(uid, 'allocations', match.id), { monto: restante });
+      }
+      const excedente = roundMoney(t.monto - usado);
+      if (excedente > 0) {
+        toast(`El gasto superó el apartado "${match.nombre}"`, 'info', `${usado.toFixed(2)} salió del apartado y ${excedente.toFixed(2)} del disponible.`);
+      } else {
+        toast(`Descontado del apartado "${match.nombre}"`, 'info', `Quedan ${restante.toFixed(2)} apartados.`);
+      }
+      return {
+        ...t,
+        apartado: {
+          allocationId: match.id,
+          nombre: match.nombre,
+          monto: usado,
+          categoryId: match.categoryId ?? null,
+          recurrente: match.recurrente ?? false,
+          montoObjetivo: match.montoObjetivo ?? null,
+        },
+      };
+    };
+
+    /** Devuelve al apartado lo que un movimiento había consumido (lo recrea si ya no existe). */
+    const restoreAllocation = (t: Transaction, allocations: Allocation[]): Allocation[] => {
+      const c = t.apartado;
+      if (!c || c.monto <= 0) return allocations;
+      const existing = allocations.find((a) => a.id === c.allocationId);
+      if (existing) {
+        let monto = roundMoney(existing.monto + c.monto);
+        if (existing.recurrente && existing.montoObjetivo) monto = Math.min(monto, existing.montoObjetivo);
+        void updateDoc(userDoc(uid, 'allocations', existing.id), { monto });
+        return allocations.map((a) => (a.id === existing.id ? { ...a, monto } : a));
+      }
+      const recreated: Allocation = {
+        id: c.allocationId,
+        bankId: t.bankId,
+        nombre: c.nombre,
+        monto: c.monto,
+        nota: 'Restaurado al editar o eliminar un gasto',
+        recurringPaymentId: null,
+        cicloClave: monthKey(todayISO()),
+        recurrente: c.recurrente ?? false,
+        montoObjetivo: c.montoObjetivo ?? null,
+        categoryId: c.categoryId ?? null,
+      };
+      void setDoc(userDoc(uid, 'allocations', recreated.id), recreated);
+      return [...allocations, recreated];
+    };
+
     return {
       data,
-      addTransaction: (t) => {
-        void setDoc(userDoc(uid, 'transactions', t.id), t);
+      addTransaction: (input) => {
+        const t: Transaction = { ...input, monto: roundMoney(input.monto) };
         if (t.tipo === 'ingreso') {
+          void setDoc(userDoc(uid, 'transactions', t.id), t);
           const cicloClave = monthKey(t.fecha);
           const pending = computePendingForCycle(t.bankId, cicloClave, data.recurringPayments, data.allocations);
           const splits = splitIncomeAcrossPending(t.monto, pending);
@@ -237,29 +331,33 @@ function AppDataProviderInner({ uid, children }: { uid: string; children: ReactN
               nota: 'Apartado automático',
               recurringPaymentId: rp.id,
               cicloClave,
+              categoryId: rp.categoryId ?? null,
             };
             void setDoc(userDoc(uid, 'allocations', allocation.id), allocation);
           }
-        } else {
-          const rp = findMatchingRecurring(t, data.recurringPayments);
-          if (rp) {
-            const cicloClave = monthKey(t.fecha);
-            const match = data.allocations.find((a) => a.recurringPaymentId === rp.id && a.cicloClave === cicloClave);
-            if (match) void deleteDoc(userDoc(uid, 'allocations', match.id));
-          } else {
-            const matchedAllocation = findMatchingAllocationByCategory(t, data.categories, data.allocations);
-            if (matchedAllocation) {
-              const restante = Math.max(0, Math.round((matchedAllocation.monto - t.monto) * 100) / 100);
-              if (restante <= 0.01 && !matchedAllocation.recurrente) {
-                void deleteDoc(userDoc(uid, 'allocations', matchedAllocation.id));
-              } else {
-                void updateDoc(userDoc(uid, 'allocations', matchedAllocation.id), { monto: restante });
-              }
-            }
-          }
+          return;
         }
+        const rp = !t.transferId ? findMatchingRecurring(t, data.recurringPayments) : undefined;
+        if (rp) {
+          void setDoc(userDoc(uid, 'transactions', t.id), t);
+          const cicloClave = monthKey(t.fecha);
+          const match = data.allocations.find((a) => a.recurringPaymentId === rp.id && a.cicloClave === cicloClave);
+          if (match) void deleteDoc(userDoc(uid, 'allocations', match.id));
+          return;
+        }
+        const withConsumption = consumeAllocation(t, data.allocations);
+        void setDoc(userDoc(uid, 'transactions', t.id), withConsumption);
       },
-      updateTransaction: (t) => void setDoc(userDoc(uid, 'transactions', t.id), t),
+      updateTransaction: (input) => {
+        const t: Transaction = { ...input, monto: roundMoney(input.monto) };
+        const previous = data.transactions.find((x) => x.id === t.id);
+        // Se devuelve al apartado lo que el movimiento viejo había consumido y se vuelve a calcular
+        // con los datos nuevos (monto, cuenta, categoría o fecha pueden haber cambiado).
+        let allocations = data.allocations;
+        if (previous?.apartado) allocations = restoreAllocation(previous, allocations);
+        const next = t.tipo === 'gasto' && !t.transferId ? consumeAllocation({ ...t, apartado: null }, allocations) : { ...t, apartado: null };
+        void setDoc(userDoc(uid, 'transactions', t.id), next);
+      },
       deleteTransaction: (id) => {
         const target = data.transactions.find((t) => t.id === id);
         if (target?.transferId) {
@@ -267,6 +365,7 @@ function AppDataProviderInner({ uid, children }: { uid: string; children: ReactN
             void deleteDoc(userDoc(uid, 'transactions', leg.id));
           }
         } else {
+          if (target?.apartado) restoreAllocation(target, data.allocations);
           void deleteDoc(userDoc(uid, 'transactions', id));
         }
       },
@@ -341,12 +440,13 @@ function AppDataProviderInner({ uid, children }: { uid: string; children: ReactN
       addRecurring: (r) => void setDoc(userDoc(uid, 'recurringPayments', r.id), r),
       updateRecurring: (r) => void setDoc(userDoc(uid, 'recurringPayments', r.id), r),
       deleteRecurring: (id) => void deleteDoc(userDoc(uid, 'recurringPayments', id)),
-      addAllocation: (a) => void setDoc(userDoc(uid, 'allocations', a.id), a),
-      updateAllocation: (a) => void setDoc(userDoc(uid, 'allocations', a.id), a),
+      addAllocation: (a) => void setDoc(userDoc(uid, 'allocations', a.id), { ...a, monto: roundMoney(a.monto) }),
+      updateAllocation: (a) => void setDoc(userDoc(uid, 'allocations', a.id), { ...a, monto: roundMoney(a.monto) }),
       deleteAllocation: (id) => void deleteDoc(userDoc(uid, 'allocations', id)),
       payAllocation: (a) => {
         if (a.monto <= 0) return;
-        const category = resolveCategoryByName(data.categories, a.nombre);
+        const linked = a.categoryId ? data.categories.find((c) => c.id === a.categoryId) : undefined;
+        const category = linked ?? resolveCategoryByName(data.categories, a.nombre);
         if (!data.categories.some((c) => c.id === category.id)) {
           void setDoc(userDoc(uid, 'categories', category.id), category);
         }
@@ -446,6 +546,9 @@ function AppDataProviderInner({ uid, children }: { uid: string; children: ReactN
       importData: (d) => void replaceAllData(uid, d).catch((err) => console.error(err)),
     };
   }, [uid, data]);
+
+  // Cada acción del usuario muestra un aviso breve, para que quede claro que se guardó
+  const value = useMemo(() => (rawValue ? withToasts(rawValue) : null), [rawValue]);
 
   if (!value) return <LoadingScreen />;
 

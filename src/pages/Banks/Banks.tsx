@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { ChevronDown, ChevronRight, Link2, Plus } from 'lucide-react';
 import styles from './Banks.module.css';
 import { useAppData } from '../../context/AppDataContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -13,10 +13,12 @@ import { formatMoney } from '../../utils/currency';
 import { resolveThemeColor } from '../../utils/chartPalette';
 import { lastNMonthKeys, monthKey } from '../../utils/dates';
 import type { Allocation, Bank } from '../../types';
+import { accountTypeInfo } from '../../utils/accounts';
+import ProgressBar from '../../components/ui/ProgressBar';
 
 export default function Banks() {
   const { data } = useAppData();
-  const { banks, transactions, allocations, settings } = data;
+  const { banks, transactions, allocations, settings, categories } = data;
   const { accent, dark } = useTheme();
   const [editing, setEditing] = useState<Bank | 'new' | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -52,8 +54,8 @@ export default function Banks() {
         </div>
       </div>
 
-      <div className={`grid ${styles.grid}`}>
-        {banks.map((bank) => {
+      <div className={`grid stagger ${styles.grid}`}>
+        {banks.map((bank, bankIndex) => {
           const Icon = getIcon(bank.icono);
           const bankColor = resolveThemeColor(bank.colorIndex, bank.id, accent, dark);
           const saldo = bankBalance(bank, transactions);
@@ -62,6 +64,8 @@ export default function Banks() {
           const disponible = bankAvailable(bank, transactions, allocations);
           const bankAllocations = allocations.filter((a) => a.bankId === bank.id);
           const isOpen = expanded.has(bank.id);
+          const tipoInfo = accountTypeInfo(bank.tipo);
+          const deuda = tipoInfo.liability ? Math.max(0, -saldo) : 0;
 
           return (
             <div key={bank.id} className="card">
@@ -71,14 +75,16 @@ export default function Banks() {
                 </div>
                 <div>
                   <div className={styles.bankName}>{bank.nombre}</div>
-                  <div className={styles.bankType}>{bank.tipo}</div>
+                  <div className={styles.bankType}>{tipoInfo.label}</div>
                 </div>
               </div>
 
               <div className={styles.statsRow}>
                 <div>
-                  <div className={styles.statLabel}>Saldo</div>
-                  <div className={styles.statValue}>{formatMoney(saldo, settings.moneda)}</div>
+                  <div className={styles.statLabel}>{tipoInfo.liability ? 'Deuda' : 'Saldo'}</div>
+                  <div className={styles.statValue} style={tipoInfo.liability && deuda > 0 ? { color: 'var(--brick)' } : undefined}>
+                    {formatMoney(tipoInfo.liability ? deuda : saldo, settings.moneda)}
+                  </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div className={styles.statLabel}>Disponible</div>
@@ -103,9 +109,33 @@ export default function Banks() {
                 </div>
               </div>
 
+              {bank.tipo === 'credito' && bank.limiteCredito ? (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, marginBottom: 6 }}>
+                    <span className="text-faint">Uso del crédito</span>
+                    <span
+                      className="mono"
+                      style={{ fontWeight: 700, color: deuda / bank.limiteCredito > 0.3 ? 'var(--brick)' : 'var(--forest)' }}
+                    >
+                      {Math.round((deuda / bank.limiteCredito) * 100)}% de {formatMoney(bank.limiteCredito, settings.moneda)}
+                    </span>
+                  </div>
+                  <ProgressBar
+                    value={deuda}
+                    max={bank.limiteCredito}
+                    color={deuda / bank.limiteCredito > 0.3 ? 'var(--brick)' : 'var(--forest)'}
+                  />
+                  {deuda / bank.limiteCredito > 0.3 && (
+                    <p className="text-faint" style={{ fontSize: 11.5, marginTop: 6 }}>
+                      Se recomienda usar menos del 30% del límite para cuidar tu historial crediticio.
+                    </p>
+                  )}
+                </div>
+              ) : null}
+
               <Sparkline data={sparklineFor(bank)} color={bankColor} />
 
-              <div className={styles.allocationsSection}>
+              <div className={styles.allocationsSection} data-tour={bankIndex === 0 ? 'allocations' : undefined}>
                 <button className={styles.allocationsToggle} onClick={() => toggleExpanded(bank.id)}>
                   {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                   Apartados {bankAllocations.length > 0 && `(${bankAllocations.length})`}
@@ -130,6 +160,21 @@ export default function Banks() {
                               {a.recurrente && <Badge tone="forest">Mensual</Badge>}
                               {a.recurrente && a.monto <= 0 && <Badge tone="neutral">Pagado este mes</Badge>}
                             </div>
+                            {a.categoryId && categories.some((c) => c.id === a.categoryId) && (
+                              <div className="text-faint" style={{ fontSize: 11.5, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                {(() => {
+                                  const cat = categories.find((c) => c.id === a.categoryId)!;
+                                  const CatIcon = getIcon(cat.icono);
+                                  return (
+                                    <>
+                                      <Link2 size={11} />
+                                      <CatIcon size={12} />
+                                      {cat.nombre}
+                                    </>
+                                  );
+                                })()}
+                              </div>
+                            )}
                             {a.nota && <div className="text-faint" style={{ fontSize: 11.5 }}>{a.nota}</div>}
                           </div>
                           <span className="mono" style={{ fontWeight: 600, color: 'var(--gold)' }}>
@@ -149,7 +194,7 @@ export default function Banks() {
           );
         })}
 
-        <button className={styles.addCard} onClick={() => setEditing('new')}>
+        <button className={styles.addCard} onClick={() => setEditing('new')} data-tour="banks-add">
           <Plus size={18} />
           Agregar banco / cuenta
         </button>

@@ -40,7 +40,7 @@ export default function Categories() {
           <h1 className="page-title">Categorías</h1>
           <p className="page-subtitle">Gasto acumulado del mes y presupuestos por categoría</p>
         </div>
-        <Button variant="primary" icon={<Plus size={16} />} onClick={() => setEditing('new')}>
+        <Button variant="primary" icon={<Plus size={16} />} onClick={() => setEditing('new')} data-tour="categories-add">
           Nueva categoría
         </Button>
       </div>
@@ -50,7 +50,7 @@ export default function Categories() {
           <p className="text-soft">Todavía no hay categorías configuradas.</p>
         </div>
       ) : (
-        <div className={styles.list}>
+        <div className={`${styles.list} stagger`}>
           {topCategories.map((cat) => {
             const Icon = getIcon(cat.icono);
             const catColor = resolveThemeColor(cat.colorIndex, cat.id, accent, dark);

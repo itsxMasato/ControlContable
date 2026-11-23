@@ -36,12 +36,12 @@ export default function Savings() {
           <h1 className="page-title">Ahorros y metas</h1>
           <p className="page-subtitle">{savingsGoals.length} meta{savingsGoals.length === 1 ? '' : 's'} activa{savingsGoals.length === 1 ? '' : 's'}</p>
         </div>
-        <Button variant="primary" icon={<Plus size={16} />} onClick={() => setEditingGoal('new')}>
+        <Button variant="primary" icon={<Plus size={16} />} onClick={() => setEditingGoal('new')} data-tour="goals-add">
           Nueva meta
         </Button>
       </div>
 
-      <div className={`grid ${styles.grid}`}>
+      <div className={`grid stagger ${styles.grid}`}>
         {savingsGoals.map((goal) => {
           const Icon = getIcon(goal.icono);
           const goalColor = resolveThemeColor(goal.colorIndex, goal.id, accent, dark);

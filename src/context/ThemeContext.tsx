@@ -41,6 +41,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     for (const [key, cssVar] of Object.entries(TOKEN_TO_VAR)) {
       root.setProperty(cssVar, tokens[key as keyof typeof tokens]);
     }
+    // Barra de estado de Android con el mismo color de fondo de la app
+    let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      document.head.appendChild(meta);
+    }
+    meta.content = tokens.paper;
   }, [accent, dark]);
 
   const toggleDark = () => updateSettings({ temaOscuro: !dark });

@@ -10,12 +10,19 @@
 .icon {
   color: var(--gold);
   margin-bottom: var(--space-2);
+  animation: pop-in 600ms var(--ease-spring) both, bob 4s 600ms ease-in-out infinite;
+}
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 
 .title {
   font-family: var(--font-serif);
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 .subtitle {

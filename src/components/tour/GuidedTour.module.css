@@ -1,0 +1,229 @@
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  animation: fade-in 300ms ease both;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--scrim);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+/* El "agujero" iluminado: una sombra gigante oscurece todo menos el elemento */
+.spotlight {
+  position: absolute;
+  border-radius: 18px;
+  box-shadow: 0 0 0 9999px var(--scrim), 0 0 0 3px var(--gold), 0 0 32px 6px color-mix(in srgb, var(--gold) 45%, transparent);
+  transition: top 480ms var(--ease-out), left 480ms var(--ease-out), width 480ms var(--ease-out),
+    height 480ms var(--ease-out);
+  pointer-events: none;
+}
+
+.spotlight::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 2px solid var(--gold);
+  animation: halo 1.8s var(--ease-out) infinite;
+}
+
+@keyframes halo {
+  from {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.12);
+    opacity: 0;
+  }
+}
+
+.blocker {
+  position: absolute;
+  inset: 0;
+}
+
+.card {
+  position: absolute;
+  width: min(380px, calc(100vw - 24px));
+  background: var(--card-raised, var(--card));
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  box-shadow: var(--shadow-lg);
+  padding: 18px 18px 16px;
+  opacity: 0;
+  transform: translateY(10px) scale(0.97);
+  transition: top 480ms var(--ease-out), left 480ms var(--ease-out);
+}
+
+.cardReady {
+  animation: card-in 420ms var(--ease-spring) forwards;
+}
+
+.card[data-placement='top'].cardReady {
+  animation-name: card-in-top;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes card-in-top {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: var(--hero-gradient);
+  box-shadow: var(--shadow-accent);
+  flex-shrink: 0;
+}
+
+.counter {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-faint);
+  letter-spacing: 0.02em;
+}
+
+.skip {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: none;
+  background: var(--border);
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+
+.body {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.tip {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--gold-soft);
+  color: var(--ink);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.tip svg {
+  color: var(--gold);
+}
+
+.progress {
+  display: flex;
+  gap: 5px;
+  margin: 16px 0 14px;
+}
+
+.dot {
+  height: 5px;
+  flex: 1;
+  border-radius: 999px;
+  background: var(--border-strong);
+  transition: background-color var(--dur-med) ease;
+}
+
+.dotDone {
+  background: color-mix(in srgb, var(--gold) 45%, transparent);
+}
+
+.dotActive {
+  background: var(--gold);
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ghost,
+.primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.ghost:active,
+.primary:active {
+  transform: scale(0.96);
+}
+
+.ghost {
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--ink-soft);
+}
+
+.primary {
+  border: none;
+  background: var(--gold);
+  color: var(--on-accent);
+  box-shadow: var(--shadow-accent);
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: 16px 16px 14px;
+  }
+}

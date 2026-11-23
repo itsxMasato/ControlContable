@@ -10,9 +10,9 @@
 }
 
 .iconWrap {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -21,14 +21,14 @@
 
 .bankName {
   font-family: var(--font-serif);
-  font-weight: 600;
-  font-size: 16px;
+  font-weight: 800;
+  font-size: 16.5px;
+  letter-spacing: -0.02em;
 }
 
 .bankType {
   font-size: 12px;
   color: var(--ink-faint);
-  text-transform: capitalize;
 }
 
 .statsRow {
@@ -47,8 +47,10 @@
 
 .statValue {
   font-family: var(--font-mono);
-  font-weight: 600;
-  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: -0.02em;
 }
 
 .statsRowSecondary {
@@ -109,7 +111,7 @@
 }
 
 .allocationRow:hover {
-  background: var(--gold-soft);
+  background: var(--border);
 }
 
 .allocationName {
@@ -147,8 +149,12 @@
   color: var(--ink-soft);
   gap: 8px;
   font-weight: 600;
-  transition: all 150ms ease;
+  transition: all var(--dur-med) var(--ease-out);
   background: transparent;
+}
+
+.addCard:active {
+  transform: scale(0.98);
 }
 
 .addCard:hover {

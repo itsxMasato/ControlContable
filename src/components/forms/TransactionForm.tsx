@@ -6,6 +6,9 @@ import { useAppData } from '../../context/AppDataContext';
 import type { Transaction, TransactionType } from '../../types';
 import { addMonthsToDate, todayISO } from '../../utils/dates';
 import { formatMoney } from '../../utils/currency';
+import { bankAvailable, findMatchingAllocationByCategory } from '../../utils/calculations';
+import { isLiability, roundMoney } from '../../utils/accounts';
+import { CalendarClock, CircleAlert, Copy, PiggyBank } from 'lucide-react';
 
 export default function TransactionForm({
   onClose,
@@ -37,6 +40,7 @@ export default function TransactionForm({
   const [enCuotas, setEnCuotas] = useState(false);
   const [numCuotas, setNumCuotas] = useState('3');
   const [error, setError] = useState('');
+  const [dupAck, setDupAck] = useState(false);
 
   const subcategories = data.categories.filter((c) => c.parentId === topCategoryId);
 
@@ -44,9 +48,43 @@ export default function TransactionForm({
   const numCuotasPreview = Math.max(2, parseInt(numCuotas, 10) || 0);
   const montoPorCuotaPreview = montoNumPreview > 0 ? montoNumPreview / numCuotasPreview : 0;
 
+  // ---- Avisos para que lo registrado cuadre con la realidad ----
+  const currency = data.settings.moneda;
+  const montoActual = roundMoney(parseFloat(monto) || 0);
+  const bank = data.banks.find((b) => b.id === bankId);
+  const categoryIdSel = subCategoryId || topCategoryId;
+  const esFuturo = fecha > todayISO();
+  const cuotaInicial = enCuotas && !existing ? roundMoney(montoActual / numCuotasPreview) : montoActual;
+
+  const insight = useMemo(() => {
+    if (!bank || montoActual <= 0 || existing?.transferId) return null;
+    // Si se está editando, lo que este movimiento consumió vuelve al apartado antes de recalcular
+    const allocations = data.allocations.map((a) =>
+      existing?.apartado && a.id === existing.apartado.allocationId ? { ...a, monto: a.monto + existing.apartado.monto } : a
+    );
+    const otherTx = data.transactions.filter((t) => t.id !== existing?.id);
+    const draft = { id: 'draft', fecha, bankId, categoryId: categoryIdSel, monto: cuotaInicial, tipo, nota } as Transaction;
+    const apartado =
+      tipo === 'gasto' && !esFuturo ? findMatchingAllocationByCategory(draft, data.categories, allocations) : undefined;
+    const usado = apartado ? Math.min(apartado.monto, cuotaInicial) : 0;
+    const disponibleAntes = bankAvailable(bank, otherTx, allocations);
+    const disponibleDespues = roundMoney(
+      tipo === 'gasto' ? disponibleAntes - (cuotaInicial - usado) : disponibleAntes + cuotaInicial
+    );
+    const duplicado = otherTx.find(
+      (t) => !t.transferId && t.bankId === bankId && t.fecha === fecha && t.tipo === tipo && Math.abs(t.monto - montoActual) < 0.005
+    );
+    return { apartado, usado, disponibleDespues, duplicado };
+  }, [bank, montoActual, cuotaInicial, existing, data, fecha, bankId, categoryIdSel, tipo, nota, esFuturo]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const montoNum = parseFloat(monto);
+    const montoNum = roundMoney(parseFloat(monto));
+    if (!existing && insight?.duplicado && !dupAck) {
+      setDupAck(true);
+      setError('');
+      return;
+    }
     if (!montoNum || montoNum <= 0) {
       setError('Ingresá un monto válido mayor a cero.');
       return;
@@ -131,9 +169,13 @@ export default function TransactionForm({
               type="number"
               step="0.01"
               min="0"
+              inputMode="decimal"
               placeholder="0.00"
               value={monto}
-              onChange={(e) => setMonto(e.target.value)}
+              onChange={(e) => {
+                setMonto(e.target.value);
+                setDupAck(false);
+              }}
               autoFocus
             />
           </div>
@@ -247,6 +289,47 @@ export default function TransactionForm({
           )
         )}
 
+        {insight && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+            {insight.apartado && (
+              <div className="badge" style={{ ...noticeStyle, background: 'var(--gold-soft)', color: 'var(--gold)' }}>
+                <PiggyBank size={15} style={{ flexShrink: 0 }} />
+                <span>
+                  Se descontará {formatMoney(insight.usado, currency)} del apartado "{insight.apartado.nombre}"
+                  {insight.usado < cuotaInicial && ` y ${formatMoney(cuotaInicial - insight.usado, currency)} del disponible`}.
+                </span>
+              </div>
+            )}
+            {bank && insight.disponibleDespues < 0 && tipo === 'gasto' && (
+              <div className="badge" style={{ ...noticeStyle, background: 'var(--brick-soft)', color: 'var(--brick)' }}>
+                <CircleAlert size={15} style={{ flexShrink: 0 }} />
+                <span>
+                  {bank.tipo === 'credito' && bank.limiteCredito
+                    ? `Supera el límite disponible de ${bank.nombre} por ${formatMoney(-insight.disponibleDespues, currency)}.`
+                    : isLiability(bank)
+                      ? `La deuda de ${bank.nombre} aumentará con este gasto.`
+                      : `Deja ${bank.nombre} con ${formatMoney(insight.disponibleDespues, currency)} disponible. Revisá que el monto y la cuenta sean correctos.`}
+                </span>
+              </div>
+            )}
+            {esFuturo && (
+              <div className="badge" style={{ ...noticeStyle, background: 'var(--slate-soft)', color: 'var(--slate)' }}>
+                <CalendarClock size={15} style={{ flexShrink: 0 }} />
+                <span>Fecha futura: queda como movimiento programado y no descuenta apartados hoy.</span>
+              </div>
+            )}
+            {!existing && insight.duplicado && (
+              <div className="badge" style={{ ...noticeStyle, background: 'var(--brick-soft)', color: 'var(--brick)' }}>
+                <Copy size={15} style={{ flexShrink: 0 }} />
+                <span>
+                  Ya hay un {tipo} de {formatMoney(montoActual, currency)} en esta cuenta el mismo día
+                  {insight.duplicado.nota ? ` ("${insight.duplicado.nota}")` : ''}. ¿Es un duplicado?
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
         {error && <div className={formStyles.error}>{error}</div>}
 
         <div className={formStyles.actions}>
@@ -254,6 +337,7 @@ export default function TransactionForm({
             <Button
               type="button"
               variant="danger"
+              confirmText={existing.apartado ? `Eliminar y devolver ${formatMoney(existing.apartado.monto, currency)} al apartado` : undefined}
               onClick={() => {
                 deleteTransaction(existing.id);
                 onClose();
@@ -266,10 +350,20 @@ export default function TransactionForm({
             Cancelar
           </Button>
           <Button type="submit" variant="primary">
-            {existing ? 'Guardar cambios' : 'Registrar movimiento'}
+            {existing ? 'Guardar cambios' : dupAck ? 'Registrar de todos modos' : 'Registrar movimiento'}
           </Button>
         </div>
       </form>
     </Modal>
   );
 }
+
+const noticeStyle: React.CSSProperties = {
+  borderRadius: 12,
+  padding: '9px 12px',
+  fontWeight: 550,
+  fontSize: 12.5,
+  lineHeight: 1.4,
+  alignItems: 'flex-start',
+  whiteSpace: 'normal',
+};

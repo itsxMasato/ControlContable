@@ -1,0 +1,160 @@
+.card {
+  margin-bottom: var(--space-4);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.ring {
+  --pct: 0%;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: conic-gradient(var(--gold) var(--pct), var(--border) 0);
+  transition: background 600ms var(--ease-out);
+}
+
+.ring span {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.headText {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.sub {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.hide {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: none;
+  background: var(--border);
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 8px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur-fast) ease;
+  animation: fade-up 420ms var(--ease-out) both;
+}
+
+.item:nth-child(2) { animation-delay: 40ms; }
+.item:nth-child(3) { animation-delay: 80ms; }
+.item:nth-child(4) { animation-delay: 120ms; }
+.item:nth-child(5) { animation-delay: 160ms; }
+
+.item:hover {
+  border-color: var(--gold);
+}
+
+.item:active {
+  transform: scale(0.98);
+}
+
+.check {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+
+.itemDone .check {
+  background: var(--forest);
+  color: #fff;
+  animation: pop-in 400ms var(--ease-spring);
+}
+
+.itemDone .itemLabel {
+  color: var(--ink-faint);
+  text-decoration: line-through;
+}
+
+.itemText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.itemLabel {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.itemHint {
+  font-size: 11.5px;
+  color: var(--ink-faint);
+}
+
+.chev {
+  color: var(--ink-faint);
+  flex-shrink: 0;
+}
+
+.tour {
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 6px 0;
+}

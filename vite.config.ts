@@ -15,8 +15,8 @@ export default defineConfig({
         short_name: 'Libro de Gastos',
         description: 'Control financiero personal: gastos, ingresos, bancos, metas de ahorro y pagos recurrentes.',
         lang: 'es',
-        theme_color: '#1F2E3D',
-        background_color: '#EAE6D6',
+        theme_color: '#F6F4EF',
+        background_color: '#F6F4EF',
         display: 'standalone',
         start_url: '/',
         scope: '/',
@@ -30,6 +30,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallbackDenylist: [/^\/__/],
       },
     }),

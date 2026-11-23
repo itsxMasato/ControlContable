@@ -1,60 +1,189 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(20, 24, 29, 0.45);
+  background: var(--scrim);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 6vh var(--space-4);
+  padding: 7vh var(--space-4);
   z-index: 100;
   overflow-y: auto;
+  animation: fade-in var(--dur-med) ease both;
+}
+
+.overlayClosing {
+  animation: fade-out 220ms ease both;
 }
 
 .modal {
   background: var(--card-raised, var(--card));
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
   width: 100%;
-  max-width: 480px;
+  max-width: 500px;
   padding: var(--space-5);
-  animation: rise 180ms ease;
+  animation: modal-in 340ms var(--ease-out) both;
 }
 
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.modalClosing {
+  animation: modal-out 220ms ease both;
+}
+
+.shake {
+  animation: shake 380ms ease;
+}
+
+.handle {
+  display: none;
+}
+
+.body {
+  min-width: 0;
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-3);
   margin-bottom: var(--space-4);
 }
 
 .title {
   font-family: var(--font-serif);
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 .closeBtn {
-  background: transparent;
+  background: var(--border);
   border: none;
   cursor: pointer;
   color: var(--ink-soft);
-  padding: 4px;
-  border-radius: var(--radius-sm);
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background-color var(--dur-fast) ease, color var(--dur-fast) ease, transform var(--dur-fast) ease;
 }
 
 .closeBtn:hover {
   color: var(--ink);
-  background: var(--border);
+  background: var(--border-strong);
+}
+
+.closeBtn:active {
+  transform: scale(0.9);
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes modal-out {
+  to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: none; }
+  25% { transform: translateX(-6px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-3px); }
+}
+
+/* En el teléfono el modal se vuelve una hoja inferior, más cómoda para el pulgar */
+@media (max-width: 640px) {
+  .overlay {
+    align-items: flex-end;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .modal {
+    max-width: none;
+    max-height: 92dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: 26px 26px 0 0;
+    border-bottom: none;
+    padding: var(--space-2) var(--space-4) calc(var(--space-5) + var(--safe-bottom));
+    animation: sheet-in 380ms var(--ease-out) both;
+  }
+
+  .modalClosing {
+    animation: sheet-out 220ms ease-in both;
+  }
+
+  .shake {
+    animation: sheet-nudge 380ms ease;
+  }
+
+  .handle {
+    display: block;
+    width: 40px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--border-strong);
+    margin: 4px auto 12px;
+  }
+
+  .grab {
+    position: sticky;
+    top: calc(-1 * var(--space-2));
+    margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-4)) var(--space-3);
+    padding: var(--space-2) var(--space-4) 0;
+    background: var(--card-raised, var(--card));
+    z-index: 1;
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .header {
+    padding: 4px 0 8px;
+    margin-bottom: 0;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes sheet-out {
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes sheet-nudge {
+  0%, 100% { transform: none; }
+  40% { transform: translateY(-10px); }
+  70% { transform: translateY(3px); }
 }

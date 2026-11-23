@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { Download, FileSpreadsheet, LogOut, Plus, Upload } from 'lucide-react';
+import { CirclePlay, Download, FileSpreadsheet, ListChecks, LogOut, Plus, Upload } from 'lucide-react';
+import { startTour } from '../../components/tour/GuidedTour';
 import styles from './Settings.module.css';
 import { useAppData } from '../../context/AppDataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -69,6 +70,34 @@ export default function Settings() {
             Cerrar sesión
           </Button>
         </div>
+      </div>
+
+      <div className={`card ${styles.section}`}>
+        <div className="section-title">Ayuda</div>
+        <div className={styles.row}>
+          <div>
+            <div className={styles.rowLabel}>Tutorial guiado</div>
+            <div className={styles.rowSub}>Un recorrido por cada sección para entender cómo funciona la app.</div>
+          </div>
+          <Button variant="primary" icon={<CirclePlay size={16} />} onClick={startTour}>
+            Ver tutorial
+          </Button>
+        </div>
+        {data.settings.primerosPasosOcultos && (
+          <div className={styles.row}>
+            <div>
+              <div className={styles.rowLabel}>Primeros pasos</div>
+              <div className={styles.rowSub}>Volvé a mostrar la lista de primeros pasos en el Resumen.</div>
+            </div>
+            <Button
+              variant="secondary"
+              icon={<ListChecks size={16} />}
+              onClick={() => updateSettings({ primerosPasosOcultos: false })}
+            >
+              Mostrar
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className={`card ${styles.section}`}>
@@ -249,9 +278,8 @@ export default function Settings() {
           </div>
           <Button
             variant="danger"
-            onClick={() => {
-              if (confirm('Esto borrará TODOS tus datos permanentemente. ¿Continuar?')) clearAll();
-            }}
+            confirmText="Sí, borrar TODO (no se puede deshacer)"
+            onClick={() => clearAll()}
           >
             Borrar todo
           </Button>

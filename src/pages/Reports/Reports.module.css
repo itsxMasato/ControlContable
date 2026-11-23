@@ -1,24 +1,36 @@
 .toggleRow {
   display: inline-flex;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
-  overflow: hidden;
+  padding: 4px;
+  gap: 2px;
+  border-radius: 14px;
+  background: var(--border);
   margin-bottom: var(--space-4);
 }
 
 .toggleBtn {
-  padding: 8px 16px;
+  padding: 8px 18px;
   font-size: 13px;
-  font-weight: 600;
-  background: var(--card);
+  font-weight: 650;
+  background: transparent;
   border: none;
+  border-radius: 10px;
   cursor: pointer;
   color: var(--ink-soft);
+  transition: all var(--dur-med) var(--ease-out);
 }
 
 .toggleBtnActive {
-  background: var(--gold);
-  color: var(--card);
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm), 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.table tbody tr {
+  transition: background-color var(--dur-fast) ease;
+}
+
+.table tbody tr:hover {
+  background: var(--border);
 }
 
 .table {

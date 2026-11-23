@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Plus, Search } from 'lucide-react';
+import { Bell, ChevronDown, Plus, Search } from 'lucide-react';
 import styles from './Topbar.module.css';
 import { useAppData } from '../../context/AppDataContext';
 import { useActiveAccount } from '../../context/ActiveAccountContext';
@@ -9,6 +9,8 @@ import { formatMoney } from '../../utils/currency';
 import { formatDateShort } from '../../utils/dates';
 import Button from '../ui/Button';
 import TransactionForm from '../forms/TransactionForm';
+import SyncStatus from '../ui/SyncStatus';
+import { BrandMark } from '../ui/Splash';
 
 export default function Topbar() {
   const { data } = useAppData();
@@ -39,8 +41,13 @@ export default function Topbar() {
 
   return (
     <header className={styles.topbar}>
+      <span className={styles.mobileBrand}>
+        <BrandMark size={34} />
+      </span>
+      <div className={styles.accountWrap} data-tour="account">
       <select
         className={styles.accountSelect}
+        aria-label="Cuenta activa"
         value={activeBankId ?? ''}
         onChange={(e) => setActiveBankId(e.target.value || null)}
       >
@@ -51,6 +58,8 @@ export default function Topbar() {
           </option>
         ))}
       </select>
+        <ChevronDown size={15} className={styles.accountChevron} />
+      </div>
 
       <div className={styles.searchWrap}>
         <Search size={16} className={styles.searchIcon} />
@@ -89,12 +98,23 @@ export default function Topbar() {
 
       <div className={styles.spacer} />
 
+      <span className={styles.syncCompact} data-tour="sync">
+        <SyncStatus compact />
+      </span>
+
       <button className={styles.iconBtn} onClick={() => navigate('/alertas')} aria-label="Notificaciones">
         <Bell size={19} strokeWidth={1.8} />
         {alertCount > 0 && <span className={styles.badgeDot}>{alertCount}</span>}
       </button>
 
-      <Button variant="primary" size="small" icon={<Plus size={16} />} onClick={() => setShowForm(true)}>
+      <Button
+        variant="primary"
+        size="small"
+        className={styles.newBtn}
+        data-tour="new-tx"
+        icon={<Plus size={16} />}
+        onClick={() => setShowForm(true)}
+      >
         Nueva transacción
       </Button>
 

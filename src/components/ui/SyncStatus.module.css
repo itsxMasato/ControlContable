@@ -1,0 +1,42 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+  transition: background-color var(--dur-med) ease, color var(--dur-med) ease;
+  animation: pop-in var(--dur-med) var(--ease-out) both;
+}
+
+.compact {
+  width: 32px;
+  padding: 0;
+  justify-content: center;
+}
+
+.synced {
+  background: var(--forest-soft);
+  color: var(--forest);
+}
+
+.pending {
+  background: var(--slate-soft);
+  color: var(--slate);
+}
+
+.offline {
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+.text {
+  line-height: 1;
+}

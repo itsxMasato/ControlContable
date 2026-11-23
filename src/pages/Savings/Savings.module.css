@@ -19,14 +19,17 @@
 
 .goalName {
   font-family: var(--font-serif);
-  font-weight: 600;
-  font-size: 16px;
+  font-weight: 800;
+  font-size: 16.5px;
+  letter-spacing: -0.02em;
 }
 
 .circleLabel {
   font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  font-size: 17px;
+  letter-spacing: -0.02em;
 }
 
 .amountsLine {
@@ -50,8 +53,13 @@
   cursor: pointer;
   color: var(--ink-soft);
   gap: 8px;
-  font-weight: 600;
+  font-weight: 650;
   background: transparent;
+  transition: all var(--dur-med) var(--ease-out);
+}
+
+.addCard:active {
+  transform: scale(0.98);
 }
 
 .addCard:hover {

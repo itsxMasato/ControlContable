@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { BookOpen } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { BrandMark } from '../../components/ui/Splash';
 import styles from './Login.module.css';
 import formStyles from '../../components/ui/Form.module.css';
 import Button from '../../components/ui/Button';
@@ -17,6 +18,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const switchMode = (next: Mode) => {
     setMode(next);
@@ -72,16 +74,22 @@ export default function Login() {
 
   return (
     <div className={styles.wrap}>
+      <div className={styles.blobA} aria-hidden="true" />
+      <div className={styles.blobB} aria-hidden="true" />
+      <div className={styles.blobC} aria-hidden="true" />
       <div className={styles.card}>
         <div className={styles.brand}>
-          <BookOpen size={32} strokeWidth={1.6} className={styles.brandMark} />
+          <span className={styles.brandMark}>
+            <BrandMark size={58} />
+          </span>
           <div className={styles.brandTitle}>Libro de Gastos</div>
           <div className={styles.brandSubtitle}>
             {mode === 'login' ? 'Ingresá a tu cuenta' : 'Creá tu cuenta para empezar'}
           </div>
         </div>
 
-        <div className={styles.tabs}>
+        <div className={styles.tabs} data-mode={mode}>
+          <span className={styles.tabIndicator} aria-hidden="true" />
           <button
             type="button"
             className={`${styles.tab} ${mode === 'login' ? styles.tabActive : ''}`}
@@ -98,33 +106,46 @@ export default function Login() {
           </button>
         </div>
 
-        {error && <div className={`${styles.message} ${styles.messageError}`}>{error}</div>}
-        {success && <div className={`${styles.message} ${styles.messageSuccess}`}>{success}</div>}
+        {error && <div key={error} className={`${styles.message} ${styles.messageError}`}>{error}</div>}
+        {success && <div key={success} className={`${styles.message} ${styles.messageSuccess}`}>{success}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className={formStyles.field}>
             <label className={formStyles.label}>Correo electrónico</label>
+            <div className={styles.inputWrap}>
+            <Mail size={17} className={styles.inputIcon} />
             <input
-              className={formStyles.input}
+              className={`${formStyles.input} ${styles.iconInput}`}
               type="email"
               autoComplete="email"
               placeholder="vos@correo.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              autoFocus
             />
+            </div>
           </div>
 
           <div className={formStyles.field}>
             <label className={formStyles.label}>Contraseña</label>
-            <input
-              className={formStyles.input}
-              type="password"
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className={styles.inputWrap}>
+              <Lock size={17} className={styles.inputIcon} />
+              <input
+                className={`${formStyles.input} ${styles.iconInput}`}
+                type={showPassword ? 'text' : 'password'}
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                placeholder="Tu contraseña"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                className={styles.eyeBtn}
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              >
+                {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+              </button>
+            </div>
           </div>
 
           {mode === 'signup' && (
@@ -132,9 +153,9 @@ export default function Login() {
               <label className={formStyles.label}>Confirmar contraseña</label>
               <input
                 className={formStyles.input}
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 autoComplete="new-password"
-                placeholder="••••••••"
+                placeholder="Repetí la contraseña"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />

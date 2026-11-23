@@ -6,11 +6,11 @@ export default function ChartTooltip({ active, children }: { active?: boolean; c
     <div
       style={{
         background: 'var(--card-raised, var(--card))',
-        border: '1px solid var(--border-strong)',
-        borderRadius: 8,
-        padding: '8px 12px',
+        border: '1px solid var(--border)',
+        borderRadius: 12,
+        padding: '10px 14px',
         fontSize: 12.5,
-        boxShadow: 'none',
+        boxShadow: 'var(--shadow-lg)',
       }}
     >
       {children}

@@ -23,8 +23,9 @@
 
 .bubble {
   max-width: 85%;
-  padding: 10px 14px;
-  border-radius: var(--radius-md);
+  padding: 11px 15px;
+  border-radius: 18px;
+  animation: fade-up var(--dur-med) var(--ease-out) both;
   font-size: 13.5px;
   line-height: 1.55;
   white-space: pre-wrap;
@@ -32,14 +33,16 @@
 
 .bubbleUser {
   align-self: flex-end;
-  background: var(--gold-soft);
-  color: var(--ink);
+  background: var(--gold);
+  color: var(--on-accent);
+  border-bottom-right-radius: 6px;
 }
 
 .bubbleAssistant {
   align-self: flex-start;
   background: var(--paper);
   border: 1px solid var(--border);
+  border-bottom-left-radius: 6px;
 }
 
 .inputRow {
@@ -76,6 +79,10 @@
   font-size: 12.5px;
   cursor: pointer;
   color: var(--ink-soft);
+}
+
+.suggestionBtn:active {
+  transform: scale(0.96);
 }
 
 .suggestionBtn:hover {

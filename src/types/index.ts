@@ -1,4 +1,13 @@
-export type AccountType = 'corriente' | 'ahorro' | 'credito' | 'efectivo';
+export type AccountType =
+  | 'corriente'
+  | 'ahorro'
+  | 'credito'
+  | 'efectivo'
+  | 'digital'
+  | 'inversion'
+  | 'financiera'
+  | 'aparte'
+  | 'prestamo';
 
 export interface Bank {
   id: string;
@@ -8,6 +17,8 @@ export interface Bank {
   tipo: AccountType;
   saldoInicial: number;
   icono: string;
+  /** Solo tarjetas de crédito: cupo total. El disponible se calcula como límite − deuda − apartados. */
+  limiteCredito?: number | null;
 }
 
 export interface Category {
@@ -38,6 +49,20 @@ export interface Transaction {
   cuotaTotalCuotas?: number | null;
   /** Id compartido por las dos transacciones (salida/entrada) de una transferencia entre cuentas. */
   transferId?: string | null;
+  /**
+   * Parte de este gasto que se descontó de un apartado. Se guarda para poder devolverla al apartado
+   * si el movimiento se edita o se elimina (así el dinero apartado nunca "desaparece").
+   */
+  apartado?: AllocationConsumption | null;
+}
+
+export interface AllocationConsumption {
+  allocationId: string;
+  nombre: string;
+  monto: number;
+  categoryId?: string | null;
+  recurrente?: boolean;
+  montoObjetivo?: number | null;
 }
 
 export interface Contribution {
@@ -87,6 +112,11 @@ export interface Allocation {
   recurrente?: boolean;
   /** Monto al que se repone este apartado en cada ciclo nuevo, si es recurrente. */
   montoObjetivo?: number | null;
+  /**
+   * Categoría existente a la que pertenece el apartado: los gastos de esa categoría (o de sus
+   * subcategorías) en esta cuenta se descuentan de aquí, y al "pagarlo" el gasto queda en ella.
+   */
+  categoryId?: string | null;
 }
 
 export type AlertSeverity = 'info' | 'advertencia' | 'logro';
@@ -125,6 +155,10 @@ export interface AppSettings {
   temaOscuro: boolean;
   colorAcento: AccentColor;
   ia: AISettings;
+  /** true cuando el usuario terminó u omitió el tutorial guiado. */
+  tutorialVisto?: boolean;
+  /** true si el usuario ocultó la tarjeta de "Primeros pasos" del Resumen. */
+  primerosPasosOcultos?: boolean;
 }
 
 export interface AppData {

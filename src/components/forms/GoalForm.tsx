@@ -6,14 +6,8 @@ import { useAppData } from '../../context/AppDataContext';
 import { useTheme } from '../../context/ThemeContext';
 import { getChartPalette } from '../../utils/chartPalette';
 import type { SavingsGoal } from '../../types';
+import IconPicker from '../ui/IconPicker';
 
-const ICONS = [
-  { value: 'shield', label: 'Escudo' },
-  { value: 'plane', label: 'Avión' },
-  { value: 'laptop', label: 'Laptop' },
-  { value: 'home', label: 'Casa' },
-  { value: 'piggy-bank', label: 'Alcancía' },
-];
 
 export default function GoalForm({ onClose, existing }: { onClose: () => void; existing?: SavingsGoal }) {
   const { data, addGoal, updateGoal, deleteGoal } = useAppData();
@@ -24,7 +18,7 @@ export default function GoalForm({ onClose, existing }: { onClose: () => void; e
   const [fechaObjetivo, setFechaObjetivo] = useState(existing?.fechaObjetivo ?? '');
   const [bankId, setBankId] = useState(existing?.bankId ?? data.banks[0]?.id ?? '');
   const [colorIndex, setColorIndex] = useState(existing?.colorIndex ?? 0);
-  const [icono, setIcono] = useState(existing?.icono ?? ICONS[0].value);
+  const [icono, setIcono] = useState(existing?.icono ?? 'target');
   const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -106,17 +100,11 @@ export default function GoalForm({ onClose, existing }: { onClose: () => void; e
           </div>
         </div>
 
-        <div className={formStyles.row}>
-          <div className={formStyles.field}>
-            <label className={formStyles.label}>Ícono</label>
-            <select className={formStyles.select} value={icono} onChange={(e) => setIcono(e.target.value)}>
-              {ICONS.map((i) => (
-                <option key={i.value} value={i.value}>
-                  {i.label}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className={formStyles.field}>
+          <label className={formStyles.label}>Ícono</label>
+          <IconPicker value={icono} onChange={setIcono} preferredGroup="Cuentas y finanzas" />
+        </div>
+        <div>
           <div className={formStyles.field}>
             <label className={formStyles.label}>Color</label>
             <div style={{ display: 'flex', gap: 6, paddingTop: 4, flexWrap: 'wrap' }}>

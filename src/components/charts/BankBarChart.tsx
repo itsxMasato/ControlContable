@@ -47,7 +47,7 @@ export default function BankBarChart({
         />
         <Bar
           dataKey="total"
-          radius={[0, 6, 6, 0]}
+          radius={[0, 8, 8, 0]}
           barSize={20}
           label={{
             position: 'right',

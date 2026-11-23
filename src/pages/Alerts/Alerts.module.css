@@ -15,6 +15,7 @@
 }
 
 .alertCard {
+  animation: fade-up 420ms var(--ease-out) both;
   display: flex;
   gap: var(--space-3);
   align-items: flex-start;

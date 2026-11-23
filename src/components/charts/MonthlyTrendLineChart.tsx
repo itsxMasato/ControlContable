@@ -1,4 +1,4 @@
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { Currency } from '../../types';
 import { formatCompactMoney, formatMoney } from '../../utils/currency';
 import { monthLabel } from '../../utils/dates';
@@ -13,13 +13,23 @@ export default function MonthlyTrendLineChart({
 }) {
   return (
     <ResponsiveContainer width="100%" height={220}>
-      <LineChart data={data} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
-        <CartesianGrid stroke="var(--border)" vertical={false} />
+      <AreaChart data={data} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+        <defs>
+          <linearGradient id="trendIngreso" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--forest)" stopOpacity={0.28} />
+            <stop offset="100%" stopColor="var(--forest)" stopOpacity={0} />
+          </linearGradient>
+          <linearGradient id="trendGasto" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--brick)" stopOpacity={0.28} />
+            <stop offset="100%" stopColor="var(--brick)" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid stroke="var(--border)" strokeDasharray="4 4" vertical={false} />
         <XAxis
           dataKey="month"
           tickFormatter={monthLabel}
           tick={{ fill: 'var(--ink-soft)', fontSize: 12 }}
-          axisLine={{ stroke: 'var(--border-strong)' }}
+          axisLine={false}
           tickLine={false}
         />
         <YAxis
@@ -30,6 +40,7 @@ export default function MonthlyTrendLineChart({
           width={64}
         />
         <Tooltip
+          cursor={{ stroke: 'var(--border-strong)', strokeDasharray: '4 4' }}
           content={({ active, payload, label }) => {
             if (!active || !label) return null;
             return (
@@ -45,9 +56,28 @@ export default function MonthlyTrendLineChart({
             );
           }}
         />
-        <Line type="monotone" dataKey="ingreso" stroke="var(--forest)" strokeWidth={2} dot={false} />
-        <Line type="monotone" dataKey="gasto" stroke="var(--brick)" strokeWidth={2} dot={false} />
-      </LineChart>
+        <Area
+          type="monotone"
+          dataKey="ingreso"
+          stroke="var(--forest)"
+          strokeWidth={2.5}
+          fill="url(#trendIngreso)"
+          dot={false}
+          activeDot={{ r: 5, strokeWidth: 3, stroke: 'var(--card)' }}
+          animationDuration={1100}
+        />
+        <Area
+          type="monotone"
+          dataKey="gasto"
+          stroke="var(--brick)"
+          strokeWidth={2.5}
+          fill="url(#trendGasto)"
+          dot={false}
+          activeDot={{ r: 5, strokeWidth: 3, stroke: 'var(--card)' }}
+          animationDuration={1100}
+          animationBegin={150}
+        />
+      </AreaChart>
     </ResponsiveContainer>
   );
 }

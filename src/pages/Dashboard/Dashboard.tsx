@@ -1,12 +1,14 @@
 import { Link } from 'react-router-dom';
-import { Flame, Landmark, PiggyBank, Wallet } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, ChevronRight, Flame, Landmark, PiggyBank, TrendingDown } from 'lucide-react';
 import styles from './Dashboard.module.css';
 import { useAppData } from '../../context/AppDataContext';
 import { useActiveAccount } from '../../context/ActiveAccountContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useAlerts } from '../../hooks/useAlerts';
 import { useSavingsStreak } from '../../hooks/useSavingsStreak';
-import MetricCard from '../../components/ui/MetricCard';
+import AnimatedNumber from '../../components/ui/AnimatedNumber';
+import FirstSteps from '../../components/tour/FirstSteps';
+import { getIcon } from '../../components/ui/iconMap';
 import SeverityIcon from '../../components/ui/SeverityIcon';
 import EmptyState from '../../components/ui/EmptyState';
 import CategoryDonutChart from '../../components/charts/CategoryDonutChart';
@@ -16,6 +18,7 @@ import {
   monthChangePct,
   monthExpenseTotal,
   monthlyTrend,
+  netWorthBreakdown,
   spendByBankForMonth,
   spendByCategoryForMonth,
   totalConsolidatedBalance,
@@ -24,6 +27,13 @@ import {
 import { addMonths, formatDateShort, monthKey, monthLabelLong, todayISO } from '../../utils/dates';
 import { formatMoney } from '../../utils/currency';
 import { resolveThemeColor } from '../../utils/chartPalette';
+
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Buenos días';
+  if (h < 20) return 'Buenas tardes';
+  return 'Buenas noches';
+}
 
 export default function Dashboard() {
   const { data } = useAppData();
@@ -41,6 +51,7 @@ export default function Dashboard() {
   const prevMonth = addMonths(currentMonth, -1);
 
   const saldoConsolidado = totalConsolidatedBalance(banksInScope, transactions);
+  const patrimonio = netWorthBreakdown(banksInScope, transactions);
   const gastoMes = monthExpenseTotal(txInScope, currentMonth);
   const gastoMesPrev = monthExpenseTotal(txInScope, prevMonth);
   const pctChange = monthChangePct(gastoMes, gastoMesPrev);
@@ -58,22 +69,101 @@ export default function Dashboard() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Resumen</h1>
-          <p className="page-subtitle">{monthLabelLong(currentMonth)}</p>
+          <p className={styles.greetingDate}>
+            {new Date().toLocaleDateString('es', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+            })}
+          </p>
+          <h1 className="page-title">{greeting()}</h1>
+          <p className="page-subtitle">Resumen de {monthLabelLong(currentMonth)}</p>
         </div>
       </div>
 
-      <div className={`grid ${styles.metricsGrid}`}>
-        <MetricCard label="Saldo consolidado" value={formatMoney(saldoConsolidado, currency)} icon={<Wallet size={16} className="text-faint" />} />
-        <MetricCard
-          label="Gasto del mes"
-          value={formatMoney(gastoMes, currency)}
-          delta={pctChange !== null ? { pct: pctChange, caption: 'vs. mes anterior' } : null}
-          deltaGoodDirection="down"
+      <FirstSteps />
+
+      <section
+        className={styles.hero}
+        data-tour="hero"
+        onPointerMove={(e) => {
+          const r = e.currentTarget.getBoundingClientRect();
+          e.currentTarget.style.setProperty('--rx', `${((e.clientY - r.top) / r.height - 0.5) * -5}deg`);
+          e.currentTarget.style.setProperty('--ry', `${((e.clientX - r.left) / r.width - 0.5) * 7}deg`);
+          e.currentTarget.style.setProperty('--mx', `${((e.clientX - r.left) / r.width) * 100}%`);
+          e.currentTarget.style.setProperty('--my', `${((e.clientY - r.top) / r.height) * 100}%`);
+        }}
+        onPointerLeave={(e) => {
+          e.currentTarget.style.setProperty('--rx', '0deg');
+          e.currentTarget.style.setProperty('--ry', '0deg');
+        }}
+      >
+        <div className={styles.heroShine} aria-hidden="true" />
+        <div className={styles.heroOrb} aria-hidden="true" />
+        <div className={styles.heroOrb2} aria-hidden="true" />
+        <div className={styles.heroLabel}>
+          {activeBankId ? (banksInScope[0]?.nombre ?? 'Saldo') : patrimonio.deudas > 0 ? 'Patrimonio neto' : 'Saldo consolidado'}
+        </div>
+        <AnimatedNumber
+          className={styles.heroValue}
+          value={saldoConsolidado}
+          format={(n) => formatMoney(n, currency)}
         />
-        <MetricCard label="Total ahorrado" value={formatMoney(totalAhorrado, currency)} icon={<PiggyBank size={16} className="text-faint" />} />
-        <MetricCard label="Bancos activos" value={String(banks.length)} icon={<Landmark size={16} className="text-faint" />} />
-      </div>
+        {patrimonio.deudas > 0 && (
+          <div className={styles.heroBreakdown}>
+            <span>
+              Activos <strong>{formatMoney(patrimonio.activos, currency)}</strong>
+            </span>
+            <span className={styles.heroDot} />
+            <span>
+              Deudas <strong>{formatMoney(patrimonio.deudas, currency)}</strong>
+            </span>
+          </div>
+        )}
+        <div className={styles.heroStats}>
+          <div className={styles.heroStat}>
+            <span className={styles.heroStatIcon}>
+              <TrendingDown size={16} />
+            </span>
+            <div>
+              <div className={styles.heroStatLabel}>Gasto del mes</div>
+              <AnimatedNumber
+                className={styles.heroStatValue}
+                value={gastoMes}
+                format={(n) => formatMoney(n, currency)}
+              />
+              {pctChange !== null && (
+                <span className={styles.heroDelta} data-good={pctChange <= 0}>
+                  {pctChange >= 0 ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
+                  {Math.abs(pctChange).toFixed(1)}% vs. mes anterior
+                </span>
+              )}
+            </div>
+          </div>
+          <div className={styles.heroStat}>
+            <span className={styles.heroStatIcon}>
+              <PiggyBank size={16} />
+            </span>
+            <div>
+              <div className={styles.heroStatLabel}>Total ahorrado</div>
+              <AnimatedNumber
+                className={styles.heroStatValue}
+                value={totalAhorrado}
+                format={(n) => formatMoney(n, currency)}
+              />
+            </div>
+          </div>
+          <div className={styles.heroStat}>
+            <span className={styles.heroStatIcon}>
+              <Landmark size={16} />
+            </span>
+            <div>
+              <div className={styles.heroStatLabel}>Bancos activos</div>
+              <span className={styles.heroStatValue}>{banks.length}</span>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div className={`grid ${styles.contentGrid}`}>
         <div className={`card ${styles.chartCard}`}>
@@ -98,14 +188,14 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className={styles.rightColumn}>
+        <div className={`${styles.rightColumn} stagger`}>
           <div className="card">
             <div className={styles.streakWrap}>
               <div className={styles.streakFlame}>
                 <Flame size={22} strokeWidth={1.8} />
               </div>
               <div>
-                <div style={{ fontFamily: 'var(--font-serif)', fontSize: 18, fontWeight: 600 }}>
+                <div className={styles.streakTitle}>
                   {streak} semana{streak === 1 ? '' : 's'} de racha
                 </div>
                 <div className="text-soft" style={{ fontSize: 13 }}>
@@ -116,12 +206,19 @@ export default function Dashboard() {
           </div>
 
           <div className={`card ${styles.movementsCard}`}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'baseline',
+                marginBottom: 12,
+              }}
+            >
               <span className="section-title" style={{ marginBottom: 0 }}>
                 Últimos movimientos
               </span>
-              <Link to="/transacciones" style={{ fontSize: 13, color: 'var(--gold)', fontWeight: 600, textDecoration: 'none' }}>
-                Ver todos
+              <Link to="/transacciones" className={styles.seeAll}>
+                Ver todos <ChevronRight size={14} />
               </Link>
             </div>
             {recentMovements.length === 0 ? (
@@ -132,17 +229,33 @@ export default function Dashboard() {
                 const cat = categories.find((c) => c.id === t.categoryId);
                 return (
                   <div key={t.id} className={styles.movementRow}>
-                    <span
-                      className={styles.movementDot}
-                      style={{ background: bank ? resolveThemeColor(bank.colorIndex, bank.id, accent, dark) : undefined }}
-                    />
+                    {(() => {
+                      const color = bank
+                        ? resolveThemeColor(bank.colorIndex, bank.id, accent, dark)
+                        : 'var(--ink-faint)';
+                      const Icon = getIcon(cat?.icono ?? '');
+                      return (
+                        <span
+                          className="icon-tile"
+                          style={{
+                            background: `color-mix(in srgb, ${color} 15%, transparent)`,
+                            color,
+                          }}
+                        >
+                          <Icon size={18} strokeWidth={2} />
+                        </span>
+                      );
+                    })()}
                     <div className={styles.movementMeta}>
                       <div className={styles.movementNote}>{t.nota || cat?.nombre}</div>
                       <div className="text-faint" style={{ fontSize: 12 }}>
                         {formatDateShort(t.fecha)} · {bank?.nombre}
                       </div>
                     </div>
-                    <span className={`mono ${t.tipo === 'gasto' ? 'text-expense' : 'text-income'}`} style={{ fontWeight: 600 }}>
+                    <span
+                      className={`mono ${t.tipo === 'gasto' ? 'text-expense' : 'text-income'}`}
+                      style={{ fontWeight: 600 }}
+                    >
                       {t.tipo === 'gasto' ? '-' : '+'}
                       {formatMoney(t.monto, currency)}
                     </span>
@@ -155,12 +268,19 @@ export default function Dashboard() {
       </div>
 
       <div className="card" style={{ marginTop: 'var(--space-4)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'baseline',
+            marginBottom: 12,
+          }}
+        >
           <span className="section-title" style={{ marginBottom: 0 }}>
             Alertas destacadas
           </span>
-          <Link to="/alertas" style={{ fontSize: 13, color: 'var(--gold)', fontWeight: 600, textDecoration: 'none' }}>
-            Ver todas
+          <Link to="/alertas" className={styles.seeAll}>
+            Ver todas <ChevronRight size={14} />
           </Link>
         </div>
         {highlightedAlerts.length === 0 ? (

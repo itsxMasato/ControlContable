@@ -1,0 +1,97 @@
+.layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10000;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.layer[data-visible='true'] {
+  opacity: 1;
+}
+
+/* Contenedores que solo se trasladan (por JS); el estilo visual va en los hijos */
+.dotPos,
+.ringPos {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--card) 85%, transparent), 0 0 12px var(--gold);
+  transition: transform 220ms var(--ease-spring), opacity 160ms ease;
+}
+
+.ring {
+  width: 36px;
+  height: 36px;
+  margin: -18px 0 0 -18px;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--gold) 70%, transparent);
+  background: transparent;
+  transition: transform 320ms var(--ease-spring), background-color 220ms ease, border-color 220ms ease,
+    opacity 160ms ease, border-width 220ms ease;
+}
+
+/* Sobre algo clickeable: el anillo crece y se rellena, el punto se achica */
+.layer[data-state='hover'] .ring {
+  transform: scale(1.6);
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+  border-color: var(--gold);
+  backdrop-filter: blur(1px);
+}
+
+.layer[data-state='hover'] .dot {
+  transform: scale(0.5);
+}
+
+/* Sobre campos de texto se oculta: manda el cursor de texto del sistema */
+.layer[data-state='text'] .ring,
+.layer[data-state='text'] .dot {
+  opacity: 0;
+  transform: scale(0.4);
+}
+
+/* Presionado */
+.layer[data-pressed='true'] .ring {
+  transform: scale(0.75);
+  border-width: 3px;
+}
+
+.layer[data-pressed='true'][data-state='hover'] .ring {
+  transform: scale(1.25);
+}
+
+.layer[data-pressed='true'] .dot {
+  transform: scale(1.6);
+}
+
+/* Onda al hacer clic */
+.burst {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  border: 2px solid var(--gold);
+  animation: burst 520ms var(--ease-out) forwards;
+}
+
+@keyframes burst {
+  from {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(4.5);
+    opacity: 0;
+  }
+}
